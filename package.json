@@ -9,13 +9,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check:syntax": "node scripts/check-js.js",
     "screenshot": "node scripts/screenshot.js"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.4",
     "@vitest/ui": "^1.0.4",
-    "html-minifier-terser": "^6.1.0",
     "jsdom": "^23.0.0",
     "puppeteer": "^24.37.5",
     "vite": "^8.0.10",
@@ -28,8 +26,5 @@
     "dashboard"
   ],
   "author": "Super Productivity Community",
-  "license": "MIT",
-  "dependencies": {
-    "acorn": "^8.16.0"
-  }
+  "license": "MIT"
 }

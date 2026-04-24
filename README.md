@@ -33,22 +33,34 @@ Below are screenshots of the plugin rendered outside of the host app (mock data 
 ## 🛠️ Project Structure
 
 ```
-sp-dashboard/
-├── index.html            # Main UI (CSS + JS embedded)
-├── manifest.json.template # Template used at build time
-└── plugin.js             # Super Productivity integration script
+sp-dashboard-src/         # ESM source (built with Vite → single-file HTML)
+├── index.html            # Production entry (DOM skeleton only)
+├── index.dev.html        # Dev-only entry that loads mock data
+├── main.js               # Production bootstrap: imports CSS + runs bootstrap()
+├── main.dev.js           # Dev bootstrap: main.js + loadMockData() fallback
+├── constants.js          # MODES, MS_PER_*, PIE_COLORS, TAB_IDS, etc.
+├── state.js              # cachedTasks/Projects/latestMetrics/currentSort
+├── sp-integration.js     # pullDataFromSP + message listener + bootstrap()
+├── processing/           # getDueBounds, processData
+├── rendering/            # tabs, sortHandlers, renderTable, renderDailyBreakdown,
+│                         # charts, renderDashboard
+├── styles/               # 8 CSS modules (base/layout/tabs/views/stats/charts/
+│                         # table/breakdown)
+└── dev/mock-data.js      # Standalone mock dataset (dev-only, tree-shaken from prod)
 
-build/sp-dashboard/      # Generated distribution output
+sp-dashboard/             # Static artefacts that ship next to the built HTML
+├── manifest.json.template
+├── plugin.js             # SP → iframe bridge (runs outside the iframe)
+└── icon.svg
 
-tests/
-└── index.test.js         # Vitest/JSDOM unit tests
-
-Makefile                 # Build & release helpers
-package.json             # Node tooling and dependencies
-README.md                # This file
+build/sp-dashboard/       # Generated single-file output (vite build)
+tests/                    # Vitest/JSDOM tests that import directly from sp-dashboard-src
+vite.config.js, vitest.config.js, Makefile, package.json, README.md
 ```
 
-> All plugin logic resides in a single HTML file to conform with the host app's plugin sandbox.
+> Source is multi-file ESM; the Vite build inlines everything into a single
+> self-contained `build/sp-dashboard/index.html` to conform with the SP
+> plugin iframe's CSP.
 
 ---
 
@@ -76,6 +88,13 @@ README.md                # This file
 npm install
 ```
 
+### Standalone dev server
+
+```bash
+npm run dev       # vite dev server with hot reload
+# open http://localhost:5173/index.dev.html — loads mock data automatically
+```
+
 ### Running tests
 
 ```bash
@@ -88,23 +107,24 @@ make test
 
 ### Updating the screenshots
 
-The screenshots are stored under `assets/` and are tracked with Git LFS. You can regenerate them with:
+The screenshots are stored under `assets/`. Regenerate them with:
 
 ```bash
-npm run screenshot   # uses puppeteer, outputs images
+npm run screenshot   # spins up a transient vite dev server + puppeteer
 # or
 make screenshot
 ```
 
-
-The tests load `index.html` via JSDOM and manually execute the embedded script. They cover utility functions, metric calculations, and basic UI interactions.
+The tests import functions directly from `sp-dashboard-src/*` and load the
+DOM skeleton from `sp-dashboard-src/index.html` in a per-test `beforeEach`
+(see `tests/test-setup.js`).
 
 ### Building for release
 
 ```bash
 make
 #or
-make build        # compiles plugin into /build/sp-dashboard zip ready for distribution
+make build        # runs `vite build` and packages into /build/sp-dashboard + zip
 ```
 
 `make release` performs additional steps (tagging, GitHub release) and requires the GitHub CLI.
@@ -114,7 +134,7 @@ make build        # compiles plugin into /build/sp-dashboard zip ready for distr
 ## 📝 Usage Notes
 
 - The plugin listens for Redux `ACTION` hooks from Super Productivity and posts a message to the iframe to refresh whenever the app state changes.
-- If the PluginAPI is unavailable (e.g. opening `index.html` directly in a browser), mock data is injected after a short timeout to make development easier.
+- If the PluginAPI is unavailable, the production bundle renders an empty dashboard (that's the correct behaviour for production). For local iteration, run `npm run dev` and open `/index.dev.html`, which injects mock data via `sp-dashboard-src/dev/mock-data.js`.
 - Charts are rendered using CSS and DOM elements; they automatically bucket data if the date range contains more than 30 days.
 
 ---
