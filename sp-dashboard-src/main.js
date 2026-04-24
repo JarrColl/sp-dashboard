@@ -10,3 +10,8 @@ import './styles/breakdown.css';
 import { bootstrap } from './sp-integration.js';
 
 bootstrap();
+
+if (import.meta.env.DEV && !window.PluginAPI) {
+  const { loadMockData } = await import('./dev/mock-data.js');
+  loadMockData();
+}

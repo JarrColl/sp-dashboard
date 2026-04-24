@@ -34,10 +34,9 @@ Below are screenshots of the plugin rendered outside of the host app (mock data 
 
 ```
 sp-dashboard-src/         # ESM source (built with Vite → single-file HTML)
-├── index.html            # Production entry (DOM skeleton only)
-├── index.dev.html        # Dev-only entry that loads mock data
-├── main.js               # Production bootstrap: imports CSS + runs bootstrap()
-├── main.dev.js           # Dev bootstrap: main.js + loadMockData() fallback
+├── index.html            # Entry HTML (DOM skeleton + <script src=main.js>)
+├── main.js               # Imports CSS, runs bootstrap(); in dev dynamically
+│                         # imports dev/mock-data.js when PluginAPI is absent
 ├── constants.js          # MODES, MS_PER_*, PIE_COLORS, TAB_IDS, etc.
 ├── state.js              # cachedTasks/Projects/latestMetrics/currentSort
 ├── sp-integration.js     # pullDataFromSP + message listener + bootstrap()
@@ -46,7 +45,7 @@ sp-dashboard-src/         # ESM source (built with Vite → single-file HTML)
 │                         # charts, renderDashboard
 ├── styles/               # 8 CSS modules (base/layout/tabs/views/stats/charts/
 │                         # table/breakdown)
-└── dev/mock-data.js      # Standalone mock dataset (dev-only, tree-shaken from prod)
+└── dev/mock-data.js      # Mock dataset (dev-only, tree-shaken from prod)
 
 sp-dashboard/             # Static artefacts that ship next to the built HTML
 ├── manifest.json.template
@@ -92,7 +91,7 @@ npm install
 
 ```bash
 npm run dev       # vite dev server with hot reload
-# open http://localhost:5173/index.dev.html — loads mock data automatically
+# open http://localhost:5173/ — mock data loads automatically when PluginAPI is absent
 ```
 
 ### Running tests
@@ -134,7 +133,7 @@ make build        # runs `vite build` and packages into /build/sp-dashboard + zi
 ## 📝 Usage Notes
 
 - The plugin listens for Redux `ACTION` hooks from Super Productivity and posts a message to the iframe to refresh whenever the app state changes.
-- If the PluginAPI is unavailable, the production bundle renders an empty dashboard (that's the correct behaviour for production). For local iteration, run `npm run dev` and open `/index.dev.html`, which injects mock data via `sp-dashboard-src/dev/mock-data.js`.
+- If the PluginAPI is unavailable, the production bundle renders an empty dashboard (that's the correct behaviour for production). For local iteration, run `npm run dev` and open the dev server root — `main.js` dynamically imports `sp-dashboard-src/dev/mock-data.js` when `import.meta.env.DEV` is true and `PluginAPI` is missing. The dynamic import is stripped from the production bundle by Vite's tree-shaker.
 - Charts are rendered using CSS and DOM elements; they automatically bucket data if the date range contains more than 30 days.
 
 ---

@@ -10,7 +10,7 @@ import { createServer } from 'vite';
   });
   await server.listen();
   const { port } = server.config.server;
-  const url = `http://localhost:${port}/index.dev.html`;
+  const url = `http://localhost:${port}/index.html`;
   console.log('Opening', url);
 
   const browser = await puppeteer.launch();
