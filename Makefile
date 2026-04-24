@@ -2,7 +2,7 @@
 # Builds a distributable zip file for Super Productivity
 
 PROJECT = sp-dashboard
-PLUGIN_DIR = $(PROJECT)
+STATIC_DIR = sp-dashboard-static
 ZIP_FILE = $(PROJECT).zip
 VERSION := $(shell grep '"version"' package.json | sed 's/.*"version": "\(.*\)".*/\1/')
 DESCRIPTION := $(shell grep '"description"' package.json | sed 's/.*"description": "\(.*\)".*/\1/')
@@ -13,15 +13,15 @@ RELEASE_FILE = $(PROJECT)-v$(VERSION).zip
 # Default target
 build: clean
 	@echo "Building plugin zip file..."
-	@echo "Running vite build (outputs to build/$(PLUGIN_DIR)/index.html)..."
+	@echo "Running vite build (outputs to build/$(PROJECT)/index.html)..."
 	@npm run build
 	@echo "Generating manifest.json from template..."
 	@VERSION="$(VERSION)" DESCRIPTION="$(DESCRIPTION)" sh -c '\
 		sed -e "s/{{VERSION}}/$$VERSION/g" -e "s|{{DESCRIPTION}}|$$DESCRIPTION|g" \
-		$(PLUGIN_DIR)/manifest.json.template > build/$(PLUGIN_DIR)/manifest.json'
-	@cp $(PLUGIN_DIR)/plugin.js build/$(PLUGIN_DIR)/plugin.js
-	@cp $(PLUGIN_DIR)/icon.svg build/$(PLUGIN_DIR)/icon.svg
-	@cd build/$(PLUGIN_DIR) && zip -r ../../$(ZIP_FILE) .
+		$(STATIC_DIR)/manifest.json.template > build/$(PROJECT)/manifest.json'
+	@cp $(STATIC_DIR)/plugin.js build/$(PROJECT)/plugin.js
+	@cp $(STATIC_DIR)/icon.svg build/$(PROJECT)/icon.svg
+	@cd build/$(PROJECT) && zip -r ../../$(ZIP_FILE) .
 	@echo "✓ Plugin packaged successfully: $(ZIP_FILE)"
 
 screenshot:
@@ -32,7 +32,7 @@ screenshot:
 # Clean up generated files
 clean:
 	@echo "Cleaning up..."
-	@rm -f $(ZIP_FILE) $(RELEASE_FILE) $(PLUGIN_DIR)/manifest.json
+	@rm -f $(ZIP_FILE) $(RELEASE_FILE)
 	@rm -rf build
 	@echo "✓ Cleaned"
 

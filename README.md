@@ -47,7 +47,7 @@ sp-dashboard-src/         # ESM source (built with Vite → single-file HTML)
 │                         # table/breakdown)
 └── dev/mock-data.js      # Mock dataset (dev-only, tree-shaken from prod)
 
-sp-dashboard/             # Static artefacts that ship next to the built HTML
+sp-dashboard-static/      # Static artefacts that ship next to the built HTML
 ├── manifest.json.template
 ├── plugin.js             # SP → iframe bridge (runs outside the iframe)
 └── icon.svg

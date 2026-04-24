@@ -6,12 +6,16 @@ This is a plugin for [Super Productivity](https://super-productivity.com) that p
 
 ## Repository Structure
 
-- `sp-dashboard/` - Main plugin files
-  - `index.html` - Main UI with embedded JavaScript and CSS
-  - `plugin.js` - Plugin registration and header button
+- `sp-dashboard-src/` - ESM source bundled by Vite into a single-file HTML
+  - `index.html` - Entry HTML (DOM skeleton + `<script src=main.js>`)
+  - `main.js` - CSS imports + `bootstrap()`; dev-only dynamic import of mock data
+  - `constants.js`, `state.js`, `sp-integration.js` - top-level modules
+  - `processing/`, `rendering/`, `styles/`, `utils/`, `dev/` - feature modules
+- `sp-dashboard-static/` - Static artefacts that ship alongside the built HTML
+  - `plugin.js` - SP → iframe bridge (runs outside the iframe)
   - `manifest.json.template` - Plugin metadata template
   - `icon.svg` - Plugin icon
-- `tests/` - Vitest unit tests using JSDOM
+- `tests/` - Vitest unit tests importing directly from `sp-dashboard-src/`
 - `Makefile` - Build and release automation
 - `package.json` - Project dependencies and scripts
 
@@ -28,7 +32,7 @@ This is a plugin for [Super Productivity](https://super-productivity.com) that p
 
 ### HTML/CSS
 
-- All plugin code is embedded in `sp-dashboard/index.html`
+- Plugin source is ESM under `sp-dashboard-src/`; Vite inlines it into a single `build/sp-dashboard/index.html`
 - Use CSS custom properties (variables) for theming
 - Support both light and dark themes via `.dark-theme` body class
 - Use semantic HTML elements where possible
