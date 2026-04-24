@@ -234,6 +234,24 @@
     .details-table tr:last-child td { border-bottom: none; }
     .details-table tr:hover { background: rgba(255, 255, 255, 0.03); }
     .time-cell { font-family: monospace; font-size: 0.9rem; }
+
+    /* --- DAILY BREAKDOWN --- */
+    .daily-breakdown-toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--s, 0.5rem);
+      padding: var(--s2, 1rem) var(--s3, 1.5rem);
+      border-bottom: 1px solid var(--divider-color, #333);
+      background: var(--card-bg, #1e1e1e);
+      font-size: 0.875rem;
+      color: var(--text-color-muted, #9e9e9e);
+    }
+    .daily-breakdown-table .subtotal-row td {
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-color, #fff);
+    }
+    .daily-breakdown-table .subtotal-row:hover { background: rgba(255, 255, 255, 0.04); }
   </style>
 </head>
 <body>
@@ -279,6 +297,7 @@
       <!-- Tabs -->
       <div class="tabs">
         <button id="tab-btn-dashboard" class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+        <button id="tab-btn-daily-breakdown" class="tab-btn" onclick="switchTab('daily-breakdown')">Daily Breakdown</button>
         <button id="tab-btn-details" class="tab-btn" onclick="switchTab('details')">Detailed List</button>
       </div>
 
@@ -381,7 +400,32 @@
       </div>
 
       <!-- ========================================== -->
-      <!-- VIEW 2: DETAILED LIST                      -->
+      <!-- VIEW 2: DAILY BREAKDOWN                    -->
+      <!-- ========================================== -->
+      <div id="view-daily-breakdown" class="view-content no-padding hidden">
+        <div class="daily-breakdown-toolbar">
+          <label for="daily-breakdown-sort">Sort:</label>
+          <select id="daily-breakdown-sort" class="chart-select">
+            <option value="date-project" selected>Date &rarr; Project</option>
+            <option value="project-date">Project &rarr; Date</option>
+          </select>
+        </div>
+        <table class="details-table daily-breakdown-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Project</th>
+              <th>Hours</th>
+            </tr>
+          </thead>
+          <tbody id="daily-breakdown-body">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 3: DETAILED LIST                      -->
       <!-- ========================================== -->
       <div id="view-details" class="view-content no-padding hidden">
         <table class="details-table">
@@ -434,12 +478,12 @@
     };
 
     // --- TAB LOGIC ---
+    const TAB_IDS = ['dashboard', 'daily-breakdown', 'details'];
     const switchTab = (tabId) => {
-      document.getElementById('view-dashboard').classList.add('hidden');
-      document.getElementById('view-details').classList.add('hidden');
-      document.getElementById('tab-btn-dashboard').classList.remove('active');
-      document.getElementById('tab-btn-details').classList.remove('active');
-
+      TAB_IDS.forEach(id => {
+        document.getElementById(`view-${id}`).classList.add('hidden');
+        document.getElementById(`tab-btn-${id}`).classList.remove('active');
+      });
       document.getElementById(`view-${tabId}`).classList.remove('hidden');
       document.getElementById(`tab-btn-${tabId}`).classList.add('active');
     };
@@ -531,6 +575,9 @@
     document.getElementById('date-to').addEventListener('change', () => processData(cachedTasks, cachedProjects));
     document.getElementById('bar-chart-select').addEventListener('change', () => updateBarChart());
     document.getElementById('pie-chart-select').addEventListener('change', () => updatePieChart());
+    document.getElementById('daily-breakdown-sort').addEventListener('change', () => {
+      if (latestMetrics) renderDailyBreakdown(latestMetrics.dailyBreakdownEntries);
+    });
 
     // --- RENDER LOGIC ---
     const updateDashboardUI = (metrics) => {
@@ -574,6 +621,7 @@
       updateBarChart();
       updatePieChart();
       renderTable(sortedEntries);
+      renderDailyBreakdown(metrics.dailyBreakdownEntries);
       updateSortIndicators();
     };
 
@@ -703,6 +751,79 @@
       pieEl.style.background = `conic-gradient(${gradientStops.join(', ')})`;
     };
 
+    const formatDecimalHours = (milliseconds) => {
+      return (milliseconds / 3600000).toFixed(2) + ' h';
+    };
+
+    const formatDateWithWeekday = (dateStr) => {
+      const d = new Date(dateStr + "T00:00:00");
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    const renderDailyBreakdown = (entries) => {
+      const tbody = document.getElementById('daily-breakdown-body');
+      const sortMode = document.getElementById('daily-breakdown-sort').value;
+
+      if (!entries || entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-color-muted, #9e9e9e); padding: 3rem;">No tracked time found for this date range.</td></tr>`;
+        return;
+      }
+
+      const htmlRows = [];
+      const dataRow = (e) => `
+        <tr>
+          <td style="white-space: nowrap;">${formatDateWithWeekday(e.dateStr)}</td>
+          <td style="color: var(--text-color-muted, #9e9e9e); font-size: 0.875rem;">${e.projectName}</td>
+          <td class="time-cell" title="${formatDecimalHours(e.totalMs)}">${formatTime(e.totalMs)}</td>
+        </tr>
+      `;
+      const subtotalRow = (labelHtml, totalMs) => `
+        <tr class="subtotal-row">
+          <td></td>
+          <td>${labelHtml}</td>
+          <td class="time-cell" title="${formatDecimalHours(totalMs)}">${formatTime(totalMs)}</td>
+        </tr>
+      `;
+
+      if (sortMode === 'project-date') {
+        const projectGroups = new Map();
+        entries.forEach(e => {
+          const key = e.projectId || '__no_project__';
+          if (!projectGroups.has(key)) {
+            projectGroups.set(key, { projectName: e.projectName, entries: [], totalMs: 0 });
+          }
+          const g = projectGroups.get(key);
+          g.entries.push(e);
+          g.totalMs += e.totalMs;
+        });
+        const sortedGroups = Array.from(projectGroups.values()).sort((a, b) => b.totalMs - a.totalMs);
+        sortedGroups.forEach(group => {
+          const sortedEntries = [...group.entries].sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+          sortedEntries.forEach(e => htmlRows.push(dataRow(e)));
+          htmlRows.push(subtotalRow(`Project total &mdash; ${group.projectName}`, group.totalMs));
+        });
+      } else {
+        const dateGroups = new Map();
+        entries.forEach(e => {
+          if (!dateGroups.has(e.dateStr)) {
+            dateGroups.set(e.dateStr, { entries: [], totalMs: 0 });
+          }
+          const g = dateGroups.get(e.dateStr);
+          g.entries.push(e);
+          g.totalMs += e.totalMs;
+        });
+        const sortedDates = Array.from(dateGroups.keys()).sort((a, b) => b.localeCompare(a));
+        sortedDates.forEach(dateStr => {
+          const g = dateGroups.get(dateStr);
+          const sortedEntries = [...g.entries].sort((a, b) => b.totalMs - a.totalMs);
+          sortedEntries.forEach(e => htmlRows.push(dataRow(e)));
+          htmlRows.push(subtotalRow(`Day total &mdash; ${formatDateWithWeekday(dateStr)}`, g.totalMs));
+        });
+      }
+
+      tbody.innerHTML = htmlRows.join('');
+    };
+
     const renderTable = (entries) => {
       const tbody = document.getElementById('details-table-body');
       
@@ -789,8 +910,13 @@
         projectCompletedData: {},
         projectOverdueData: {},
         projectLateData: {},
-        tableEntries: []
+        tableEntries: [],
+        dailyBreakdownEntries: []
       };
+
+      // Accumulator for daily × project totals. Key is `${dateStr}|${projectKey}`.
+      // projectKey is the projectId or the sentinel '__no_project__' for unassigned tasks.
+      const dailyBreakdownMap = new Map();
 
       const now = Date.now();
       // define end-of-range timestamp for per-day overdue calculations
@@ -867,6 +993,21 @@
               overdue: isOverdue,
               late: isLate
             });
+
+            // daily × project rollup
+            const projectKey = task.projectId || '__no_project__';
+            const dbKey = `${dateStr}|${projectKey}`;
+            const existing = dailyBreakdownMap.get(dbKey);
+            if (existing) {
+              existing.totalMs += spentOnDate;
+            } else {
+              dailyBreakdownMap.set(dbKey, {
+                dateStr,
+                projectId: task.projectId || null,
+                projectName: pName,
+                totalMs: spentOnDate
+              });
+            }
           }
 
           // Completed Logic
@@ -971,6 +1112,9 @@
       
       // Sort descending by date
       metrics.tableEntries.sort((a, b) => b.date.localeCompare(a.date));
+
+      // Flatten daily breakdown map → array; sorting/grouping happens at render time.
+      metrics.dailyBreakdownEntries = Array.from(dailyBreakdownMap.values());
       // report any overdue tasks that had no time entries (might explain zero stats)
       const overdueNoTime = tasksArr.filter(t => {
         const keys = Object.keys(t.timeSpentOnDay || {});
@@ -988,12 +1132,15 @@
     // expose key utilities for testing (JSDOM environment won't execute script tags normally)
     window.formatTime = formatTime;
     window.formatDateShort = formatDateShort;
+    window.formatDecimalHours = formatDecimalHours;
+    window.formatDateWithWeekday = formatDateWithWeekday;
     window.getDatesInRange = getDatesInRange;
     window.switchTab = switchTab;
     window.processData = processData;
     window.updateBarChart = updateBarChart;
     window.updatePieChart = updatePieChart;
     window.sortEntries = sortEntries;
+    window.renderDailyBreakdown = renderDailyBreakdown;
 
     // --- SP INTEGRATION / NATIVE IFRAME COMMS ---
     const pullDataFromSP = async () => {

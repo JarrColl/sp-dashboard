@@ -392,6 +392,19 @@ describe('Date Range Reporter UI', () => {
       expect(pieLegend.querySelector('.legend-item')).not.toBeNull();
     });
 
+    it('switchTab also toggles the daily-breakdown tab', () => {
+      const dashView = document.getElementById('view-dashboard');
+      const dailyView = document.getElementById('view-daily-breakdown');
+      const detailsView = document.getElementById('view-details');
+      const dailyBtn = document.getElementById('tab-btn-daily-breakdown');
+
+      window.switchTab('daily-breakdown');
+      expect(dashView.classList.contains('hidden')).toBe(true);
+      expect(dailyView.classList.contains('hidden')).toBe(false);
+      expect(detailsView.classList.contains('hidden')).toBe(true);
+      expect(dailyBtn.classList.contains('active')).toBe(true);
+    });
+
     it('detail list columns are sortable when headers are clicked', () => {
       // create two tasks with different dates
       const taskA = { id:'a', parentId:null, title:'A', isDone:false, dueDay:'2026-01-01', timeSpentOnDay:{'2026-01-01':3600000} };
@@ -410,6 +423,132 @@ describe('Date Range Reporter UI', () => {
       // clicking again flips direction
       dateTh.click();
       expect(dateTh.classList.contains('sorted-desc')).toBe(true);
+    });
+  });
+
+  describe('Daily Breakdown Tab', () => {
+    // Helper: set the period selector to a fixed custom range so tests are deterministic
+    const setCustomRange = (fromStr, toStr) => {
+      const presetSelect = document.getElementById('date-preset');
+      presetSelect.value = 'custom';
+      document.getElementById('date-from').value = fromStr;
+      document.getElementById('date-to').value = toStr;
+    };
+
+    it('aggregates time per (date, project) pair, dropping empty-day cells', () => {
+      setCustomRange('2026-02-19', '2026-02-22');
+      const tasks = [
+        { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
+          timeSpentOnDay:{ '2026-02-20': 3600000, '2026-02-21': 1800000 } },
+        { id:'b', parentId:null, title:'B', isDone:false, projectId:'p1',
+          timeSpentOnDay:{ '2026-02-20': 1800000 } },
+        { id:'c', parentId:null, title:'C', isDone:false, projectId:'p2',
+          timeSpentOnDay:{ '2026-02-22': 7200000 } },
+      ];
+      const projects = [{ id:'p1', title:'Alpha' }, { id:'p2', title:'Beta' }];
+      window.processData(tasks, projects);
+
+      // Expose via latestMetrics? — we read from the DOM instead, since processData
+      // pushes dailyBreakdownEntries onto metrics and renderDailyBreakdown fills the tbody.
+      const rows = Array.from(document.querySelectorAll('#daily-breakdown-body tr'));
+      // 3 data rows (2026-02-22 Beta, 2026-02-21 Alpha, 2026-02-20 Alpha) plus 3 day-subtotal rows
+      expect(rows.length).toBe(6);
+
+      // No row should reference 2026-02-19 (empty day)
+      const text = rows.map(r => r.textContent).join(' ');
+      expect(text).not.toContain('Feb 19');
+    });
+
+    it('buckets tasks with null projectId under Uncategorized', () => {
+      setCustomRange('2026-02-20', '2026-02-20');
+      const tasks = [
+        { id:'n', parentId:null, title:'No Proj', isDone:false, projectId:null,
+          timeSpentOnDay:{ '2026-02-20': 3600000 } },
+      ];
+      window.processData(tasks, []);
+      const text = document.getElementById('daily-breakdown-body').textContent;
+      expect(text).toContain('Uncategorized');
+    });
+
+    it('Date → Project sort emits a Day total row between date groups, sorted desc', () => {
+      setCustomRange('2026-02-20', '2026-02-22');
+      const tasks = [
+        { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
+          timeSpentOnDay:{ '2026-02-20': 3600000, '2026-02-22': 7200000 } },
+      ];
+      const projects = [{ id:'p1', title:'Alpha' }];
+      window.processData(tasks, projects);
+      document.getElementById('daily-breakdown-sort').value = 'date-project';
+      document.getElementById('daily-breakdown-sort').dispatchEvent(new Event('change'));
+
+      const rows = Array.from(document.querySelectorAll('#daily-breakdown-body tr'));
+      // Expected: Feb 22 data, Feb 22 Day total, Feb 20 data, Feb 20 Day total
+      expect(rows[0].textContent).toContain('Feb 22');
+      expect(rows[1].classList.contains('subtotal-row')).toBe(true);
+      expect(rows[1].textContent).toContain('Day total');
+      expect(rows[1].textContent).toContain('2h 0m');
+      expect(rows[2].textContent).toContain('Feb 20');
+      expect(rows[3].classList.contains('subtotal-row')).toBe(true);
+      expect(rows[3].textContent).toContain('Day total');
+      expect(rows[3].textContent).toContain('1h 0m');
+    });
+
+    it('Project → Date sort emits a Project total row and orders projects by total hours desc', () => {
+      setCustomRange('2026-02-19', '2026-02-22');
+      const tasks = [
+        { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
+          timeSpentOnDay:{ '2026-02-20': 3600000 } }, // Alpha: 1h
+        { id:'b', parentId:null, title:'B', isDone:false, projectId:'p2',
+          timeSpentOnDay:{ '2026-02-21': 7200000, '2026-02-22': 3600000 } }, // Beta: 3h
+      ];
+      const projects = [{ id:'p1', title:'Alpha' }, { id:'p2', title:'Beta' }];
+      window.processData(tasks, projects);
+
+      document.getElementById('daily-breakdown-sort').value = 'project-date';
+      document.getElementById('daily-breakdown-sort').dispatchEvent(new Event('change'));
+
+      const rows = Array.from(document.querySelectorAll('#daily-breakdown-body tr'));
+      // Beta (3h total) comes first — 2 data rows then a Project total row
+      expect(rows[0].textContent).toContain('Beta');
+      expect(rows[0].textContent).toContain('Feb 22');
+      expect(rows[1].textContent).toContain('Beta');
+      expect(rows[1].textContent).toContain('Feb 21');
+      expect(rows[2].classList.contains('subtotal-row')).toBe(true);
+      expect(rows[2].textContent).toContain('Project total');
+      expect(rows[2].textContent).toContain('Beta');
+      expect(rows[2].textContent).toContain('3h 0m');
+
+      // Alpha (1h total) follows
+      expect(rows[3].textContent).toContain('Alpha');
+      expect(rows[4].classList.contains('subtotal-row')).toBe(true);
+      expect(rows[4].textContent).toContain('Project total');
+      expect(rows[4].textContent).toContain('Alpha');
+      expect(rows[4].textContent).toContain('1h 0m');
+    });
+
+    it('hours cell exposes decimal hours via title attribute', () => {
+      setCustomRange('2026-02-20', '2026-02-20');
+      const tasks = [
+        { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
+          timeSpentOnDay:{ '2026-02-20': 9000000 } }, // 2h 30m = 2.50 h
+      ];
+      const projects = [{ id:'p1', title:'Alpha' }];
+      window.processData(tasks, projects);
+      const cell = document.querySelector('#daily-breakdown-body .time-cell');
+      expect(cell.textContent.trim()).toBe('2h 30m');
+      expect(cell.getAttribute('title')).toBe('2.50 h');
+    });
+
+    it('shows empty-state message when no tracked time in the range', () => {
+      setCustomRange('2026-02-19', '2026-02-22');
+      window.processData([], []);
+      const tbody = document.getElementById('daily-breakdown-body');
+      expect(tbody.textContent).toContain('No tracked time found for this date range.');
+    });
+
+    it('default sort mode is date-project', () => {
+      const select = document.getElementById('daily-breakdown-sort');
+      expect(select.value).toBe('date-project');
     });
   });
 });
