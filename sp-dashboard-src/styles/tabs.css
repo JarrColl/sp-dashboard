@@ -9,6 +9,7 @@
 .tab-btn {
   background: none;
   border: none;
+  border-radius: 0;
   padding: var(--s2, 1rem) var(--s2, 1rem);
   cursor: pointer;
   color: var(--text-color-muted, #9e9e9e);
