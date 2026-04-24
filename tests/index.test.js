@@ -77,6 +77,34 @@ describe('Date Range Reporter UI', () => {
       expect(progressFill.style.width).toBe('50%');
     });
 
+    it('should not double-count time from parent aggregator tasks', () => {
+      const today = new Date().toISOString().split('T')[0];
+      const mockTasks = [
+        {
+          id: 'parent',
+          parentId: null,
+          title: 'Parent Task',
+          isDone: false,
+          subTaskIds: ['child'],
+          timeSpentOnDay: { [today]: 7200000 } // 2h aggregate from child
+        },
+        {
+          id: 'child',
+          parentId: 'parent',
+          title: 'Child Task',
+          isDone: false,
+          timeSpentOnDay: { [today]: 7200000 } // 2h actually logged here
+        }
+      ];
+
+      window.processData(mockTasks, []);
+
+      // Only the leaf (child) should be summed — 2h, not 4h
+      expect(document.getElementById('stat-time').innerText).toBe('2h 0m');
+      // And only one task should be counted in range, not two
+      expect(document.getElementById('stat-tasks-total').innerText).toContain('1 total');
+    });
+
     it('should honor dueDay provided initially', () => {
       const now = Date.now();
       const dueStr = new Date(now - 86400000).toISOString().split('T')[0];

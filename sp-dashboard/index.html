@@ -798,6 +798,11 @@
 
       const countedOverdue = new Set();
       tasksArr.forEach(task => {
+        // Skip parent aggregator tasks: SP sums subtask timeSpentOnDay onto the parent,
+        // so counting both would double-count. Leaves hold the authoritative per-day time.
+        if (Array.isArray(task.subTaskIds) && task.subTaskIds.length > 0) {
+          return;
+        }
         const keys = Object.keys(task.timeSpentOnDay || {});
         const overlap = keys.filter(k => dateRange.includes(k));
         // compute normalized due bounds (start of day / end of day)
@@ -934,6 +939,9 @@
 
       // After initial pass, some tasks may have gained dueDay later (see logs)
       tasksArr.forEach(task => {
+        if (Array.isArray(task.subTaskIds) && task.subTaskIds.length > 0) {
+          return;
+        }
         if (!countedOverdue.has(task.id)) {
           const { dueStart, dueEnd } = getDueBounds(task);
           if (!task.isDone && dueStart !== null && now > dueEnd) {
@@ -1090,7 +1098,10 @@
           },
           {
             id: "t6", parentId: null, title: "API Integration", isDone: false, projectId: "p1",
-            timeSpentOnDay: { [dates[0]]: 5400000 /* 1.5h */ }, dueDay: "2026-02-17" // Overdue with time logged
+            subTaskIds: ["t6-1"],
+            // Parent aggregate: its own 1.5h on dates[0] + subtask's 2h on dates[1]
+            timeSpentOnDay: { [dates[0]]: 5400000 /* 1.5h */, [dates[1]]: 7200000 /* 2h */ },
+            dueDay: "2026-02-17" // Overdue with time logged
           },
           {
             id: "t6-1", parentId: "t6", title: "Fix authentication endpoint", isDone: true, doneOn: new Date('2026-02-21T14:00Z').getTime(), projectId: "p1",
