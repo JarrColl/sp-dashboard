@@ -6,6 +6,15 @@ import { resolve } from 'path';
 // file moved into the sp-dashboard subdirectory
 const html = readFileSync(resolve(__dirname, '../sp-dashboard/index.html'), 'utf8');
 
+const makeTask = (id, title, overrides = {}) => ({
+  id,
+  parentId: null,
+  title,
+  isDone: false,
+  timeSpentOnDay: {},
+  ...overrides,
+});
+
 describe('Date Range Reporter UI', () => {
   let scriptContent;
 
@@ -45,22 +54,10 @@ describe('Date Range Reporter UI', () => {
 
   describe('Dashboard State Updates', () => {
     it('should calculate metrics correctly and update stat cards', () => {
+      const today = new Date().toISOString().split('T')[0];
       const mockTasks = [
-        {
-          id: 't1',
-          parentId: null,
-          title: 'Task 1',
-          isDone: true,
-          doneOn: new Date().getTime(),
-          timeSpentOnDay: { [new Date().toISOString().split('T')[0]]: 7200000 } // 2h
-        },
-        {
-          id: 't2',
-          parentId: null,
-          title: 'Task 2',
-          isDone: false,
-          timeSpentOnDay: { [new Date().toISOString().split('T')[0]]: 3600000 } // 1h
-        }
+        makeTask('t1', 'Task 1', { isDone: true, doneOn: Date.now(), timeSpentOnDay: { [today]: 7200000 } }),
+        makeTask('t2', 'Task 2', { timeSpentOnDay: { [today]: 3600000 } }),
       ];
       const mockProjects = [{ id: 'p1', title: 'Test Project' }];
 
@@ -80,21 +77,8 @@ describe('Date Range Reporter UI', () => {
     it('should not double-count time from parent aggregator tasks', () => {
       const today = new Date().toISOString().split('T')[0];
       const mockTasks = [
-        {
-          id: 'parent',
-          parentId: null,
-          title: 'Parent Task',
-          isDone: false,
-          subTaskIds: ['child'],
-          timeSpentOnDay: { [today]: 7200000 } // 2h aggregate from child
-        },
-        {
-          id: 'child',
-          parentId: 'parent',
-          title: 'Child Task',
-          isDone: false,
-          timeSpentOnDay: { [today]: 7200000 } // 2h actually logged here
-        }
+        makeTask('parent', 'Parent Task', { subTaskIds: ['child'], timeSpentOnDay: { [today]: 7200000 } }),
+        makeTask('child', 'Child Task', { parentId: 'parent', timeSpentOnDay: { [today]: 7200000 } }),
       ];
 
       window.processData(mockTasks, []);
@@ -108,14 +92,7 @@ describe('Date Range Reporter UI', () => {
     it('should honor dueDay provided initially', () => {
       const now = Date.now();
       const dueStr = new Date(now - 86400000).toISOString().split('T')[0];
-      const task = {
-        id: 't-initial',
-        parentId: null,
-        title: 'Initial Overdue',
-        isDone: false,
-        dueDay: dueStr,
-        timeSpentOnDay: {}
-      };
+      const task = makeTask('t-initial', 'Initial Overdue', { dueDay: dueStr });
       window.processData([task], []);
       expect(document.getElementById('stat-overdue').innerText).toBe('1');
       // table should include this task despite zero time
@@ -125,14 +102,7 @@ describe('Date Range Reporter UI', () => {
 
     it('should pick up overdue when dueDay is added later', () => {
       const now = Date.now();
-      const task = {
-        id: 't-late',
-        parentId: null,
-        title: 'Late Task',
-        isDone: false,
-        // start without dueDay
-        timeSpentOnDay: {}
-      };
+      const task = makeTask('t-late', 'Late Task'); // starts without dueDay
       const tasks = [ task ];
 
       // initial run: no overdue
@@ -147,14 +117,7 @@ describe('Date Range Reporter UI', () => {
 
     it('should not mark a task overdue/late if dueDay is added on the same day after completion', () => {
       const now = Date.now();
-      const task = {
-        id: 't-add-today',
-        parentId: null,
-        title: 'Added Today',
-        isDone: true,
-        doneOn: now,
-        timeSpentOnDay: {}
-      };
+      const task = makeTask('t-add-today', 'Added Today', { isDone: true, doneOn: now });
       const tasks = [ task ];
       // initial run: no dueDay -> not overdue
       window.processData(tasks, []);
@@ -171,15 +134,9 @@ describe('Date Range Reporter UI', () => {
     it('should count a task done after its due day as overdue and late', () => {
       const now = Date.now();
       const due = new Date(now - 86400000); // yesterday
-      const task = {
-        id: 't-done-late',
-        parentId: null,
-        title: 'Done Late',
-        isDone: true,
-        doneOn: now,
-        dueDay: due.toISOString().split('T')[0],
-        timeSpentOnDay: {}
-      };
+      const task = makeTask('t-done-late', 'Done Late', {
+        isDone: true, doneOn: now, dueDay: due.toISOString().split('T')[0],
+      });
       window.processData([task], []);
       expect(document.getElementById('stat-overdue').innerText).toBe('1');
       expect(document.getElementById('stat-late').innerText).toBe('1');
@@ -191,13 +148,7 @@ describe('Date Range Reporter UI', () => {
     // new tests covering dueDay/empy status
     it('should handle a task without dueDay by not marking it overdue', () => {
       const now = Date.now();
-      const task = {
-        id: 't-no-due',
-        parentId: null,
-        title: 'No Due Date',
-        isDone: false,
-        timeSpentOnDay: {}
-      };
+      const task = makeTask('t-no-due', 'No Due Date');
       window.processData([task], []);
       expect(document.getElementById('stat-overdue').innerText).toBe('0');
       // task has no time entries so it shouldn't contribute to completed/tasks stats
@@ -207,15 +158,9 @@ describe('Date Range Reporter UI', () => {
     it('should not mark a task due today as late if completed same day', () => {
       const now = Date.now();
       const todayStr = new Date(now).toISOString().split('T')[0];
-      const task = {
-        id: 't-due-today',
-        parentId: null,
-        title: 'Due Today',
-        isDone: true,
-        doneOn: now,
-        dueDay: todayStr,
-        timeSpentOnDay: {}
-      };
+      const task = makeTask('t-due-today', 'Due Today', {
+        isDone: true, doneOn: now, dueDay: todayStr,
+      });
       window.processData([task], []);
       expect(document.getElementById('stat-late').innerText).toBe('0');
       // row should appear in detail list despite zero time
@@ -228,15 +173,10 @@ describe('Date Range Reporter UI', () => {
 
     it('should count a completed subtask in total tasks', () => {
       const now = Date.now();
-      const sub = {
-        id: 'sub1',
-        parentId: 'parent',
-        title: 'subtask done',
-        isDone: true,
-        doneOn: now,
+      const sub = makeTask('sub1', 'subtask done', {
+        parentId: 'parent', isDone: true, doneOn: now,
         dueDay: new Date(now).toISOString().split('T')[0],
-        timeSpentOnDay: {}
-      };
+      });
       window.processData([sub], []);
       expect(document.getElementById('stat-tasks').innerText).toBe('1');
       expect(document.getElementById('stat-tasks-total').innerText).toContain('1 total');
@@ -244,14 +184,7 @@ describe('Date Range Reporter UI', () => {
 
     it('should count tasks due today in totalTasks denominator even with no time logged', () => {
       const todayStr = new Date().toISOString().split('T')[0];
-      const taskDueToday = {
-        id: 't-due-no-time',
-        parentId: null,
-        title: 'Due Today No Time',
-        isDone: false,
-        dueDay: todayStr,
-        timeSpentOnDay: {}
-      };
+      const taskDueToday = makeTask('t-due-no-time', 'Due Today No Time', { dueDay: todayStr });
       window.processData([taskDueToday], []);
       // Task is due today so it should appear in the denominator
       expect(document.getElementById('stat-tasks-total').innerText).toContain('1 total');
@@ -261,15 +194,10 @@ describe('Date Range Reporter UI', () => {
 
     it('should deduplicate tasks that appear in both active and archived lists', () => {
       const now = Date.now();
-      const doneTask = {
-        id: 'task1',
-        parentId: null,
-        title: 'Done Task',
-        isDone: true,
-        doneOn: now,
+      const doneTask = makeTask('task1', 'Done Task', {
+        isDone: true, doneOn: now,
         dueDay: new Date(now).toISOString().split('T')[0],
-        timeSpentOnDay: {}
-      };
+      });
       // Simulate what happens when pullDataFromSP combines activeTasks and archivedTasks
       // The same task appears in both lists (which can happen with completed tasks)
       const activeTasks = [doneTask];
@@ -345,8 +273,8 @@ describe('Date Range Reporter UI', () => {
       // prepare metrics with one overdue task and one late task
       const now = Date.now();
       const yesterdayStr = new Date(now - 86400000).toISOString().split('T')[0];
-      const overdueTask = { id:'t1', parentId:null, title:'Foo', isDone:false, dueDay:'2026-02-20', timeSpentOnDay:{'2026-02-20':0} };
-      const lateTask = { id:'t2', parentId:null, title:'Bar', isDone:true, doneOn: now, dueDay: yesterdayStr, timeSpentOnDay:{} };
+      const overdueTask = makeTask('t1', 'Foo', { dueDay: '2026-02-20', timeSpentOnDay: { '2026-02-20': 0 } });
+      const lateTask = makeTask('t2', 'Bar', { isDone: true, doneOn: now, dueDay: yesterdayStr });
       window.processData([overdueTask, lateTask], []);
 
 
@@ -407,8 +335,8 @@ describe('Date Range Reporter UI', () => {
 
     it('detail list columns are sortable when headers are clicked', () => {
       // create two tasks with different dates
-      const taskA = { id:'a', parentId:null, title:'A', isDone:false, dueDay:'2026-01-01', timeSpentOnDay:{'2026-01-01':3600000} };
-      const taskB = { id:'b', parentId:null, title:'B', isDone:false, dueDay:'2026-01-02', timeSpentOnDay:{'2026-01-02':3600000} };
+      const taskA = makeTask('a', 'A', { dueDay: '2026-01-01', timeSpentOnDay: { '2026-01-01': 3600000 } });
+      const taskB = makeTask('b', 'B', { dueDay: '2026-01-02', timeSpentOnDay: { '2026-01-02': 3600000 } });
       window.processData([taskA, taskB], []);
       // capture initial order of date cells
       const initial = Array.from(document.querySelectorAll('#details-table-body tr td:first-child')).map(td => td.textContent);
@@ -438,12 +366,9 @@ describe('Date Range Reporter UI', () => {
     it('aggregates time per (date, project) pair, dropping empty-day cells', () => {
       setCustomRange('2026-02-19', '2026-02-22');
       const tasks = [
-        { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
-          timeSpentOnDay:{ '2026-02-20': 3600000, '2026-02-21': 1800000 } },
-        { id:'b', parentId:null, title:'B', isDone:false, projectId:'p1',
-          timeSpentOnDay:{ '2026-02-20': 1800000 } },
-        { id:'c', parentId:null, title:'C', isDone:false, projectId:'p2',
-          timeSpentOnDay:{ '2026-02-22': 7200000 } },
+        makeTask('a', 'A', { projectId: 'p1', timeSpentOnDay: { '2026-02-20': 3600000, '2026-02-21': 1800000 } }),
+        makeTask('b', 'B', { projectId: 'p1', timeSpentOnDay: { '2026-02-20': 1800000 } }),
+        makeTask('c', 'C', { projectId: 'p2', timeSpentOnDay: { '2026-02-22': 7200000 } }),
       ];
       const projects = [{ id:'p1', title:'Alpha' }, { id:'p2', title:'Beta' }];
       window.processData(tasks, projects);
@@ -462,8 +387,7 @@ describe('Date Range Reporter UI', () => {
     it('buckets tasks with null projectId under Uncategorized', () => {
       setCustomRange('2026-02-20', '2026-02-20');
       const tasks = [
-        { id:'n', parentId:null, title:'No Proj', isDone:false, projectId:null,
-          timeSpentOnDay:{ '2026-02-20': 3600000 } },
+        makeTask('n', 'No Proj', { projectId: null, timeSpentOnDay: { '2026-02-20': 3600000 } }),
       ];
       window.processData(tasks, []);
       const text = document.getElementById('daily-breakdown-body').textContent;
@@ -473,8 +397,7 @@ describe('Date Range Reporter UI', () => {
     it('Date → Project sort emits a Day total row between date groups, sorted desc', () => {
       setCustomRange('2026-02-20', '2026-02-22');
       const tasks = [
-        { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
-          timeSpentOnDay:{ '2026-02-20': 3600000, '2026-02-22': 7200000 } },
+        makeTask('a', 'A', { projectId: 'p1', timeSpentOnDay: { '2026-02-20': 3600000, '2026-02-22': 7200000 } }),
       ];
       const projects = [{ id:'p1', title:'Alpha' }];
       window.processData(tasks, projects);
@@ -496,10 +419,8 @@ describe('Date Range Reporter UI', () => {
     it('Project → Date sort emits a Project total row and orders projects by total hours desc', () => {
       setCustomRange('2026-02-19', '2026-02-22');
       const tasks = [
-        { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
-          timeSpentOnDay:{ '2026-02-20': 3600000 } }, // Alpha: 1h
-        { id:'b', parentId:null, title:'B', isDone:false, projectId:'p2',
-          timeSpentOnDay:{ '2026-02-21': 7200000, '2026-02-22': 3600000 } }, // Beta: 3h
+        makeTask('a', 'A', { projectId: 'p1', timeSpentOnDay: { '2026-02-20': 3600000 } }), // Alpha: 1h
+        makeTask('b', 'B', { projectId: 'p2', timeSpentOnDay: { '2026-02-21': 7200000, '2026-02-22': 3600000 } }), // Beta: 3h
       ];
       const projects = [{ id:'p1', title:'Alpha' }, { id:'p2', title:'Beta' }];
       window.processData(tasks, projects);
@@ -529,14 +450,13 @@ describe('Date Range Reporter UI', () => {
     it('hours cell exposes decimal hours via title attribute', () => {
       setCustomRange('2026-02-20', '2026-02-20');
       const tasks = [
-        { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
-          timeSpentOnDay:{ '2026-02-20': 9000000 } }, // 2h 30m = 2.50 h
+        makeTask('a', 'A', { projectId: 'p1', timeSpentOnDay: { '2026-02-20': 9000000 } }), // 2h 30m = 2.50 h
       ];
       const projects = [{ id:'p1', title:'Alpha' }];
       window.processData(tasks, projects);
       const cell = document.querySelector('#daily-breakdown-body .time-cell');
       expect(cell.textContent.trim()).toBe('2h 30m');
-      expect(cell.getAttribute('title')).toBe('2.50 h');
+      expect(cell.getAttribute('title')).toBe('2.50h');
     });
 
     it('shows empty-state message when no tracked time in the range', () => {
@@ -575,8 +495,7 @@ describe('Date Range Reporter UI', () => {
       it('changing rounding select re-renders cells with rounded values', () => {
         setCustomRange('2026-02-20', '2026-02-20');
         const tasks = [
-          { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
-            timeSpentOnDay:{ '2026-02-20': 135 * 60000 } }, // 2h 15m
+          makeTask('a', 'A', { projectId: 'p1', timeSpentOnDay: { '2026-02-20': 135 * 60000 } }), // 2h 15m
         ];
         const projects = [{ id:'p1', title:'Alpha' }];
         window.processData(tasks, projects);
@@ -590,7 +509,7 @@ describe('Date Range Reporter UI', () => {
         roundingSelect.dispatchEvent(new Event('change'));
         // 135 min rounded to 30 = 150 min = 2h 30m (Math.round(4.5) = 5)
         expect(cell().textContent.trim()).toBe('2h 30m');
-        expect(cell().getAttribute('title')).toBe('2.50 h');
+        expect(cell().getAttribute('title')).toBe('2.50h');
       });
 
       it('default format mode is formatted', () => {
@@ -601,8 +520,7 @@ describe('Date Range Reporter UI', () => {
       it('format toggle swaps cell text and title between formatted and decimal', () => {
         setCustomRange('2026-02-20', '2026-02-20');
         const tasks = [
-          { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
-            timeSpentOnDay:{ '2026-02-20': 9000000 } }, // 2h 30m
+          makeTask('a', 'A', { projectId: 'p1', timeSpentOnDay: { '2026-02-20': 9000000 } }), // 2h 30m
         ];
         const projects = [{ id:'p1', title:'Alpha' }];
         window.processData(tasks, projects);
@@ -610,27 +528,26 @@ describe('Date Range Reporter UI', () => {
         const cell = () => document.querySelector('#daily-breakdown-body .time-cell');
         // Default formatted: cell text = "2h 30m", title = "2.50 h"
         expect(cell().textContent.trim()).toBe('2h 30m');
-        expect(cell().getAttribute('title')).toBe('2.50 h');
+        expect(cell().getAttribute('title')).toBe('2.50h');
 
         const formatSelect = document.getElementById('daily-breakdown-format');
         formatSelect.value = 'decimal';
         formatSelect.dispatchEvent(new Event('change'));
         // Now the two swap
-        expect(cell().textContent.trim()).toBe('2.50 h');
+        expect(cell().textContent.trim()).toBe('2.50h');
         expect(cell().getAttribute('title')).toBe('2h 30m');
 
         // And flip back
         formatSelect.value = 'formatted';
         formatSelect.dispatchEvent(new Event('change'));
         expect(cell().textContent.trim()).toBe('2h 30m');
-        expect(cell().getAttribute('title')).toBe('2.50 h');
+        expect(cell().getAttribute('title')).toBe('2.50h');
       });
 
       it('decimal format combined with rounding renders rounded decimal', () => {
         setCustomRange('2026-02-20', '2026-02-20');
         const tasks = [
-          { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
-            timeSpentOnDay:{ '2026-02-20': 135 * 60000 } }, // 2h 15m
+          makeTask('a', 'A', { projectId: 'p1', timeSpentOnDay: { '2026-02-20': 135 * 60000 } }), // 2h 15m
         ];
         const projects = [{ id:'p1', title:'Alpha' }];
         window.processData(tasks, projects);
@@ -642,7 +559,7 @@ describe('Date Range Reporter UI', () => {
 
         // 135 min rounded to 30 = 150 min = 2.50 h
         const cell = document.querySelector('#daily-breakdown-body .time-cell');
-        expect(cell.textContent.trim()).toBe('2.50 h');
+        expect(cell.textContent.trim()).toBe('2.50h');
         expect(cell.getAttribute('title')).toBe('2h 30m');
       });
 
@@ -660,8 +577,7 @@ describe('Date Range Reporter UI', () => {
         // Rebuild with two dates so we have two rows under one project:
         setCustomRange('2026-02-20', '2026-02-21');
         const twoDayTasks = [
-          { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
-            timeSpentOnDay:{ '2026-02-20': 4 * 60000, '2026-02-21': 4 * 60000 } },
+          makeTask('a', 'A', { projectId: 'p1', timeSpentOnDay: { '2026-02-20': 4 * 60000, '2026-02-21': 4 * 60000 } }),
         ];
         const projects = [{ id:'p1', title:'Alpha' }];
         window.processData(twoDayTasks, projects);
