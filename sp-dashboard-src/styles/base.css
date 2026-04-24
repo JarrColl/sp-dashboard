@@ -1,7 +1,16 @@
 body {
   background-color: var(--bg, #121212);
   color: var(--text-color, #ffffff);
-  font-family: var(--font-primary-stack, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+  font-family: var(
+    --font-primary-stack,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif
+  );
   padding: var(--s3, 1.5rem);
   margin: 0;
   height: 100vh;
@@ -9,12 +18,28 @@ body {
   overflow: hidden;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--divider-color, #333); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-color-muted, #555); }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--divider-color, #333);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color-muted, #555);
+}
 
-.hidden { display: none !important; }
-.text-red { color: #f87171 !important; }
+.hidden {
+  display: none !important;
+}
+.text-red {
+  color: #f87171 !important;
+}

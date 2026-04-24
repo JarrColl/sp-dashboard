@@ -1,7 +1,7 @@
-import { MS_PER_MINUTE, MS_PER_HOUR, ROUNDING_MINUTES } from '../constants.js';
+import { MS_PER_MINUTE, MS_PER_HOUR, ROUNDING_MINUTES } from "../constants.js";
 
 export const formatTime = (milliseconds) => {
-  if (!milliseconds) return '0h 0m';
+  if (!milliseconds) return "0h 0m";
   const totalMinutes = Math.floor(milliseconds / MS_PER_MINUTE);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -9,7 +9,7 @@ export const formatTime = (milliseconds) => {
 };
 
 export const formatDecimalHours = (milliseconds) => {
-  return (milliseconds / MS_PER_HOUR).toFixed(2) + 'h';
+  return (milliseconds / MS_PER_HOUR).toFixed(2) + "h";
 };
 
 export const applyRounding = (milliseconds, mode) => {

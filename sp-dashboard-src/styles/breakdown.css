@@ -13,4 +13,6 @@
   background: rgba(255, 255, 255, 0.02);
   color: var(--text-color, #fff);
 }
-.daily-breakdown-table .subtotal-row:hover { background: rgba(255, 255, 255, 0.04); }
+.daily-breakdown-table .subtotal-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}

@@ -16,12 +16,12 @@ A lightweight dashboard plugin for [Super Productivity](https://super-productivi
 Below are screenshots of the plugin rendered outside of the host app (mock data is used when `PluginAPI` is not available):
 
 ![Dashboard View](assets/dashboard.png)
-*Dashboard with key metrics and charts.*
+_Dashboard with key metrics and charts._
 
 ![Detailed List View](assets/detailed_list.png)
-*Detailed list of individual time entries and task statuses.*
+_Detailed list of individual time entries and task statuses._
 
-*(Images are regenerated via the screenshot utility when the UI changes.)*
+_(Images are regenerated via the screenshot utility when the UI changes.)_
 
 - Native charts rendered with vanilla JS and CSS (no charting libraries)
 - Responsive layout and theming consistent with Super Productivity

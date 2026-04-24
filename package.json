@@ -9,12 +9,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "screenshot": "node scripts/screenshot.js"
+    "screenshot": "node scripts/screenshot.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.4",
     "@vitest/ui": "^1.0.4",
     "jsdom": "^23.0.0",
+    "prettier": "^3.8.3",
     "puppeteer": "^24.37.5",
     "vite": "^8.0.10",
     "vite-plugin-singlefile": "^2.3.3",

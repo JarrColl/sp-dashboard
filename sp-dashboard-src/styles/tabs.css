@@ -18,7 +18,9 @@
   outline: none;
 }
 
-.tab-btn:hover { color: var(--text-color, #fff); }
+.tab-btn:hover {
+  color: var(--text-color, #fff);
+}
 .tab-btn.active {
   color: var(--c-primary, #03a9f4);
   border-bottom-color: var(--c-primary, #03a9f4);

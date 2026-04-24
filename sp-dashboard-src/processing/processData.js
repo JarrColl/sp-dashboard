@@ -1,15 +1,15 @@
-import { MODES, MS_PER_DAY, UNCATEGORIZED_PROJECT_NAME } from '../constants.js';
-import { log } from '../utils/log.js';
-import { toDateString, getDatesInRange } from '../utils/date.js';
-import { getDueBounds } from './getDueBounds.js';
-import { updateDashboardUI } from '../rendering/renderDashboard.js';
+import { MODES, MS_PER_DAY, UNCATEGORIZED_PROJECT_NAME } from "../constants.js";
+import { log } from "../utils/log.js";
+import { toDateString, getDatesInRange } from "../utils/date.js";
+import { getDueBounds } from "./getDueBounds.js";
+import { updateDashboardUI } from "../rendering/renderDashboard.js";
 
 export const processData = (tasksArr, projectsArr) => {
-  const preset = document.getElementById('date-preset').value;
+  const preset = document.getElementById("date-preset").value;
   let dateFromStr, dateToStr;
   if (preset === MODES.PRESET.CUSTOM) {
-    dateFromStr = document.getElementById('date-from').value;
-    dateToStr = document.getElementById('date-to').value;
+    dateFromStr = document.getElementById("date-from").value;
+    dateToStr = document.getElementById("date-to").value;
   } else {
     const endObj = new Date();
     const startObj = new Date();
@@ -27,8 +27,9 @@ export const processData = (tasksArr, projectsArr) => {
   log("computed date range", dateFromStr, dateToStr, dateRange);
 
   const projectMap = {};
-  projectsArr.forEach(p => projectMap[p.id] = p.title);
-  const getProjectName = (projectId) => projectMap[projectId] || UNCATEGORIZED_PROJECT_NAME;
+  projectsArr.forEach((p) => (projectMap[p.id] = p.title));
+  const getProjectName = (projectId) =>
+    projectMap[projectId] || UNCATEGORIZED_PROJECT_NAME;
 
   let metrics = {
     totalTimeSpent: 0,
@@ -37,16 +38,28 @@ export const processData = (tasksArr, projectsArr) => {
     overdueTasks: 0,
     lateCompleted: 0,
     unplannedCount: 0,
-    weeklyData: { labels: dateRange, data: new Array(dateRange.length).fill(0) },
-    completedPerDay: { labels: dateRange, data: new Array(dateRange.length).fill(0) },
-    overduePerDay: { labels: dateRange, data: new Array(dateRange.length).fill(0) },
-    latePerDay: { labels: dateRange, data: new Array(dateRange.length).fill(0) },
+    weeklyData: {
+      labels: dateRange,
+      data: new Array(dateRange.length).fill(0),
+    },
+    completedPerDay: {
+      labels: dateRange,
+      data: new Array(dateRange.length).fill(0),
+    },
+    overduePerDay: {
+      labels: dateRange,
+      data: new Array(dateRange.length).fill(0),
+    },
+    latePerDay: {
+      labels: dateRange,
+      data: new Array(dateRange.length).fill(0),
+    },
     projectData: {},
     projectCompletedData: {},
     projectOverdueData: {},
     projectLateData: {},
     tableEntries: [],
-    dailyBreakdownEntries: []
+    dailyBreakdownEntries: [],
   };
 
   const dailyBreakdownMap = new Map();
@@ -55,9 +68,12 @@ export const processData = (tasksArr, projectsArr) => {
   const rangeEndTime = new Date(dateToStr + "T23:59:59").getTime();
 
   const dayBoundsByDate = new Map();
-  dateRange.forEach(dateStr => {
+  dateRange.forEach((dateStr) => {
     const dayStart = new Date(dateStr + "T00:00:00").getTime();
-    dayBoundsByDate.set(dateStr, { dayStart, dayEnd: dayStart + MS_PER_DAY - 1 });
+    dayBoundsByDate.set(dateStr, {
+      dayStart,
+      dayEnd: dayStart + MS_PER_DAY - 1,
+    });
   });
 
   const dueBoundsCache = new Map();
@@ -69,23 +85,37 @@ export const processData = (tasksArr, projectsArr) => {
   };
 
   const countedOverdue = new Set();
-  tasksArr.forEach(task => {
+  tasksArr.forEach((task) => {
     if (Array.isArray(task.subTaskIds) && task.subTaskIds.length > 0) {
       return;
     }
     const keys = Object.keys(task.timeSpentOnDay || {});
-    const overlap = keys.filter(k => dateRange.includes(k));
+    const overlap = keys.filter((k) => dateRange.includes(k));
     const { dueStart, dueEnd } = cachedDueBounds(task);
     if (!dueStart && !task.isDone) {
       log("task missing dueDay and not done, full object:", task);
     }
-    log("processing task", task.id, task.title,
-      "dueDay", task.dueDay,
-      "dueStartUTC", dueStart !== null ? new Date(dueStart).toISOString() : null,
-      "dueEndUTC", dueEnd !== null ? new Date(dueEnd).toISOString() : null,
-      "nowUTC", new Date(now).toISOString(),
-      "isDone", task.isDone, "doneOnUTC", task.doneOn ? new Date(task.doneOn).toISOString() : null,
-      "timeSpentOnDay keys", keys, "inRange", overlap);
+    log(
+      "processing task",
+      task.id,
+      task.title,
+      "dueDay",
+      task.dueDay,
+      "dueStartUTC",
+      dueStart !== null ? new Date(dueStart).toISOString() : null,
+      "dueEndUTC",
+      dueEnd !== null ? new Date(dueEnd).toISOString() : null,
+      "nowUTC",
+      new Date(now).toISOString(),
+      "isDone",
+      task.isDone,
+      "doneOnUTC",
+      task.doneOn ? new Date(task.doneOn).toISOString() : null,
+      "timeSpentOnDay keys",
+      keys,
+      "inRange",
+      overlap,
+    );
     let taskTimeInRange = 0;
     const pName = getProjectName(task.projectId);
 
@@ -106,10 +136,12 @@ export const processData = (tasksArr, projectsArr) => {
       metrics.overdueTasks++;
       if (isLate) {
         metrics.lateCompleted++;
-        metrics.projectLateData[pName] = (metrics.projectLateData[pName] || 0) + 1;
+        metrics.projectLateData[pName] =
+          (metrics.projectLateData[pName] || 0) + 1;
       }
       countedOverdue.add(task.id);
-      metrics.projectOverdueData[pName] = (metrics.projectOverdueData[pName] || 0) + 1;
+      metrics.projectOverdueData[pName] =
+        (metrics.projectOverdueData[pName] || 0) + 1;
     }
 
     dateRange.forEach((dateStr, index) => {
@@ -123,14 +155,14 @@ export const processData = (tasksArr, projectsArr) => {
         metrics.tableEntries.push({
           date: dateStr,
           projectName: pName,
-          taskTitle: task.title || 'Untitled Task',
+          taskTitle: task.title || "Untitled Task",
           timeSpent: spentOnDate,
           isDone: task.isDone,
           overdue: isOverdue,
-          late: isLate
+          late: isLate,
         });
 
-        const projectKey = task.projectId || '__no_project__';
+        const projectKey = task.projectId || "__no_project__";
         const dbKey = `${dateStr}|${projectKey}`;
         const existing = dailyBreakdownMap.get(dbKey);
         if (existing) {
@@ -140,14 +172,20 @@ export const processData = (tasksArr, projectsArr) => {
             dateStr,
             projectId: task.projectId || null,
             projectName: pName,
-            totalMs: spentOnDate
+            totalMs: spentOnDate,
           });
         }
       }
 
-      if (task.isDone && task.doneOn && task.doneOn >= dayStart && task.doneOn <= dayEnd) {
+      if (
+        task.isDone &&
+        task.doneOn &&
+        task.doneOn >= dayStart &&
+        task.doneOn <= dayEnd
+      ) {
         metrics.completedPerDay.data[index]++;
-        metrics.projectCompletedData[pName] = (metrics.projectCompletedData[pName] || 0) + 1;
+        metrics.projectCompletedData[pName] =
+          (metrics.projectCompletedData[pName] || 0) + 1;
         if (isLate) {
           metrics.latePerDay.data[index]++;
         }
@@ -167,26 +205,26 @@ export const processData = (tasksArr, projectsArr) => {
         metrics.tableEntries.push({
           date: doneDate,
           projectName: pName,
-          taskTitle: task.title || 'Untitled Task',
+          taskTitle: task.title || "Untitled Task",
           timeSpent: 0,
           isDone: task.isDone,
           overdue: isOverdue,
-          late: isLate
+          late: isLate,
         });
       }
     }
 
     if (taskTimeInRange === 0 && (isOverdue || isLate)) {
-      const badge = isLate ? 'Late' : 'Overdue';
-      const dateStr = dueStart ? toDateString(dueStart) : '';
+      const badge = isLate ? "Late" : "Overdue";
+      const dateStr = dueStart ? toDateString(dueStart) : "";
       metrics.tableEntries.push({
         date: dateStr,
         projectName: pName,
-        taskTitle: `${task.title || 'Untitled Task'} (${badge})`,
+        taskTitle: `${task.title || "Untitled Task"} (${badge})`,
         timeSpent: 0,
         isDone: task.isDone,
         overdue: isOverdue,
-        late: isLate
+        late: isLate,
       });
     }
 
@@ -196,18 +234,27 @@ export const processData = (tasksArr, projectsArr) => {
       metrics.projectData[pName] += taskTimeInRange;
     }
 
-    const taskCompletedInRange = task.isDone && task.doneOn && dateRange.includes(toDateString(task.doneOn));
+    const taskCompletedInRange =
+      task.isDone &&
+      task.doneOn &&
+      dateRange.includes(toDateString(task.doneOn));
     const taskDueInRange = task.dueDay && dateRange.includes(task.dueDay);
     if (taskTimeInRange > 0 || taskCompletedInRange || taskDueInRange) {
       metrics.totalTasks++;
       if (taskCompletedInRange) {
         metrics.totalCompleted++;
-        log("incrementing totalCompleted for", task.id, task.title, "- now at", metrics.totalCompleted);
+        log(
+          "incrementing totalCompleted for",
+          task.id,
+          task.title,
+          "- now at",
+          metrics.totalCompleted,
+        );
       }
     }
   });
 
-  tasksArr.forEach(task => {
+  tasksArr.forEach((task) => {
     if (Array.isArray(task.subTaskIds) && task.subTaskIds.length > 0) {
       return;
     }
@@ -216,7 +263,8 @@ export const processData = (tasksArr, projectsArr) => {
       if (!task.isDone && dueStart !== null && now > dueEnd) {
         metrics.overdueTasks++;
         const pName = getProjectName(task.projectId);
-        metrics.projectOverdueData[pName] = (metrics.projectOverdueData[pName] || 0) + 1;
+        metrics.projectOverdueData[pName] =
+          (metrics.projectOverdueData[pName] || 0) + 1;
         countedOverdue.add(task.id);
       }
     }
@@ -224,25 +272,43 @@ export const processData = (tasksArr, projectsArr) => {
 
   metrics.unplannedCount = tasksArr.reduce((cnt, t) => {
     const { dueStart } = cachedDueBounds(t);
-    return cnt + ((!t.isDone && !dueStart) ? 1 : 0);
+    return cnt + (!t.isDone && !dueStart ? 1 : 0);
   }, 0);
 
-  const doneTasks = tasksArr.filter(t => t.isDone);
-  const doneWithoutTimestamp = doneTasks.filter(t => !t.doneOn);
-  log("FINAL METRICS: totalCompleted=", metrics.totalCompleted, "totalTasks=", metrics.totalTasks);
-  log("Done tasks in array (count=" + doneTasks.length + "):", doneTasks.map(t => ({ id: t.id, title: t.title, doneOn: t.doneOn })));
+  const doneTasks = tasksArr.filter((t) => t.isDone);
+  const doneWithoutTimestamp = doneTasks.filter((t) => !t.doneOn);
+  log(
+    "FINAL METRICS: totalCompleted=",
+    metrics.totalCompleted,
+    "totalTasks=",
+    metrics.totalTasks,
+  );
+  log(
+    "Done tasks in array (count=" + doneTasks.length + "):",
+    doneTasks.map((t) => ({ id: t.id, title: t.title, doneOn: t.doneOn })),
+  );
   if (doneWithoutTimestamp.length > 0) {
-    console.warn("[sp-dashboard] WARNING: done tasks missing doneOn timestamp:", doneWithoutTimestamp.map(t => ({ id: t.id, title: t.title })));
+    console.warn(
+      "[sp-dashboard] WARNING: done tasks missing doneOn timestamp:",
+      doneWithoutTimestamp.map((t) => ({ id: t.id, title: t.title })),
+    );
   }
 
   metrics.tableEntries.sort((a, b) => b.date.localeCompare(a.date));
 
   metrics.dailyBreakdownEntries = Array.from(dailyBreakdownMap.values());
-  const overdueNoTime = tasksArr.filter(t => {
-    const keys = Object.keys(t.timeSpentOnDay || {});
-    const { dueStart, dueEnd } = cachedDueBounds(t);
-    return (!t.isDone && dueStart !== null && dueEnd < rangeEndTime && keys.length === 0);
-  }).map(t => t.id);
+  const overdueNoTime = tasksArr
+    .filter((t) => {
+      const keys = Object.keys(t.timeSpentOnDay || {});
+      const { dueStart, dueEnd } = cachedDueBounds(t);
+      return (
+        !t.isDone &&
+        dueStart !== null &&
+        dueEnd < rangeEndTime &&
+        keys.length === 0
+      );
+    })
+    .map((t) => t.id);
   if (overdueNoTime.length) {
     log("overdue tasks with no time entries", overdueNoTime);
   }

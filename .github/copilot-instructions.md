@@ -18,6 +18,7 @@ This is a plugin for [Super Productivity](https://super-productivity.com) that p
 ## Code Style and Standards
 
 ### JavaScript
+
 - Use vanilla JavaScript (no frameworks) for plugin code
 - Use modern ES6+ features (arrow functions, const/let, template literals)
 - Follow camelCase naming convention for variables and functions
@@ -26,6 +27,7 @@ This is a plugin for [Super Productivity](https://super-productivity.com) that p
 - Avoid global pollution - scope variables appropriately
 
 ### HTML/CSS
+
 - All plugin code is embedded in `sp-dashboard/index.html`
 - Use CSS custom properties (variables) for theming
 - Support both light and dark themes via `.dark-theme` body class
@@ -33,6 +35,7 @@ This is a plugin for [Super Productivity](https://super-productivity.com) that p
 - Keep CSS organized by section with clear comments
 
 ### Comments
+
 - Add comments for complex logic or non-obvious behavior
 - Document functions with clear parameter and return descriptions
 - Include examples in comments where helpful
@@ -41,11 +44,13 @@ This is a plugin for [Super Productivity](https://super-productivity.com) that p
 ## Testing Requirements
 
 ### Test Framework
+
 - Use Vitest for all tests
 - Tests use JSDOM to load and test the actual HTML file
 - Mock the PluginAPI for integration tests
 
 ### Test Coverage
+
 - Write unit tests for all new features
 - Test both success and error scenarios
 - Include edge cases (empty results, invalid dates, etc.)
@@ -53,6 +58,7 @@ This is a plugin for [Super Productivity](https://super-productivity.com) that p
 - Maintain existing test structure and patterns
 
 ### Running Tests
+
 ```bash
 npm test                 # Run tests once
 npm run test:watch       # Watch mode
@@ -63,6 +69,7 @@ make test                # Alternative using Makefile
 ## Plugin API Integration
 
 ### PluginAPI Methods
+
 - `PluginAPI.getTasks()` - Get active tasks
 - `PluginAPI.getArchivedTasks()` - Get archived tasks
 - `PluginAPI.getAllProjects()` - Get project information
@@ -71,6 +78,7 @@ make test                # Alternative using Makefile
 - `PluginAPI.setStorage()` - Save persistent data
 
 ### Error Handling
+
 - Always wrap PluginAPI calls in try-catch blocks
 - Show user-friendly error messages via `showSnack`
 - Log detailed errors to console for debugging
@@ -79,6 +87,7 @@ make test                # Alternative using Makefile
 ## Build and Release Process
 
 ### Building
+
 ```bash
 make build               # Build plugin zip file
 make clean               # Clean generated files
@@ -86,6 +95,7 @@ make help                # Show available commands
 ```
 
 ### Release Process
+
 1. Update version in `package.json`
 2. Run `make release-check` to verify prerequisites
 3. Run `make release` to:
@@ -96,6 +106,7 @@ make help                # Show available commands
 4. Follow [Semantic Versioning](https://semver.org/)
 
 ### Prerequisites for Releases
+
 - GitHub CLI (`gh`) installed and authenticated
 - Clean working directory (no uncommitted changes)
 - Write access to repository
@@ -103,12 +114,14 @@ make help                # Show available commands
 ## Report Generation Guidelines
 
 ### Date Handling
+
 - Use consistent date formatting: `YYYY-MM-DD` for storage
 - Display dates in human-readable format: "Monday, January 15, 2024"
 - Handle timezone considerations appropriately
 - Validate date ranges (start must be <= end)
 
 ### Report Formatting
+
 - Generate Markdown format for easy copy/paste
 - Support two grouping modes: by Date and by Project
 - Include time spent in human-readable format (e.g., "2h", "45m")
@@ -117,6 +130,7 @@ make help                # Show available commands
 - Include optional task notes when enabled
 
 ### Performance
+
 - Filter tasks efficiently to avoid processing unnecessary data
 - Use Sets to track processed tasks and avoid duplicates
 - Minimize DOM manipulations
@@ -125,18 +139,21 @@ make help                # Show available commands
 ## UI/UX Guidelines
 
 ### Theme Support
+
 - Detect theme from body class: `body.dark-theme`
 - Use CSS custom properties for all colors
 - Ensure good contrast in both light and dark themes
 - Test all UI states in both themes
 
 ### User Feedback
+
 - Show loading states for async operations
 - Provide clear success/error messages
 - Use appropriate icons in notifications (`ico` parameter)
 - Validate user input before processing
 
 ### Accessibility
+
 - Use semantic HTML elements
 - Include appropriate ARIA labels where needed
 - Ensure keyboard navigation works
@@ -145,12 +162,14 @@ make help                # Show available commands
 ## Data Persistence
 
 ### Storage
+
 - Use `PluginAPI.getStorage()` and `setStorage()` for persistence
 - Store saved reports with unique IDs (timestamps)
 - Handle storage errors gracefully
 - Provide clear feedback on save/load operations
 
 ### Data Format
+
 - Store reports as JSON objects with metadata (name, date, content)
 - Include timestamp for sorting and identification
 - Validate data structure when loading
@@ -159,12 +178,14 @@ make help                # Show available commands
 ## Common Patterns
 
 ### Modal Operations
+
 - Show modal: set `modal.style.display = 'flex'`
 - Hide modal: set `modal.style.display = 'none'`
 - Always populate content before showing modal
 - Clear content when closing modal
 
 ### Clipboard Operations
+
 - Use `navigator.clipboard.writeText()` for copying
 - Handle permissions and errors gracefully
 - Show success notification after copy
@@ -173,15 +194,18 @@ make help                # Show available commands
 ## Dependencies
 
 ### Production
+
 - No external runtime dependencies (vanilla JavaScript)
 - Relies on Super Productivity's PluginAPI
 
 ### Development
+
 - Vitest for testing
 - JSDOM for DOM testing
 - Coverage reporting with v8
 
 ### Adding Dependencies
+
 - Minimize external dependencies
 - Only add dependencies if absolutely necessary
 - Consider bundle size and security implications
@@ -190,12 +214,14 @@ make help                # Show available commands
 ## Documentation
 
 ### README
+
 - Keep README.md up to date with feature changes
 - Include clear installation instructions
 - Provide usage examples with screenshots where helpful
 - Document new features in the Features section
 
 ### Code Documentation
+
 - Document complex algorithms with comments
 - Keep manifest.json.template metadata accurate
 - Update version numbers consistently across files

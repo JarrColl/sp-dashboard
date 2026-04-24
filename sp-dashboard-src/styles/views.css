@@ -4,7 +4,9 @@
   padding: var(--s3, 1.5rem);
 }
 
-.view-content.no-padding { padding: 0; }
+.view-content.no-padding {
+  padding: 0;
+}
 
 .grid-3 {
   display: grid;
