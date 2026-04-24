@@ -22,7 +22,7 @@ export const renderTable = (entries) => {
       return `
         <tr>
           <td style="white-space: nowrap;">${formatDateShort(entry.date)}</td>
-          <td style="color: var(--text-color-muted, #9e9e9e); font-size: 0.875rem;">${entry.projectName}</td>
+          <td class="project-cell" style="color: var(--text-color-muted, #9e9e9e); font-size: 0.875rem;">${projectCell(entry)}</td>
           <td style="font-weight: 500;">${entry.taskTitle}</td>
           <td class="time-cell">${formatTime(entry.timeSpent)}</td>
           <td><span class="badge ${badge.cls}">${badge.label}</span></td>
@@ -30,4 +30,11 @@ export const renderTable = (entries) => {
       `;
     })
     .join("");
+};
+
+export const projectCell = (entry) => {
+  const dot = entry.projectColor
+    ? `<span class="project-dot" style="background: ${entry.projectColor}"></span>`
+    : "";
+  return `${dot}<span>${entry.projectName}</span>`;
 };

@@ -27,9 +27,16 @@ export const processData = (tasksArr, projectsArr) => {
   log("computed date range", dateFromStr, dateToStr, dateRange);
 
   const projectMap = {};
-  projectsArr.forEach((p) => (projectMap[p.id] = p.title));
-  const getProjectName = (projectId) =>
-    projectMap[projectId] || UNCATEGORIZED_PROJECT_NAME;
+  projectsArr.forEach((p) => {
+    projectMap[p.id] = { title: p.title, color: p.theme?.primary || null };
+  });
+  const UNCATEGORIZED_INFO = {
+    title: UNCATEGORIZED_PROJECT_NAME,
+    color: null,
+  };
+  const getProjectInfo = (projectId) =>
+    projectMap[projectId] || UNCATEGORIZED_INFO;
+  const getProjectName = (projectId) => getProjectInfo(projectId).title;
 
   let metrics = {
     totalTimeSpent: 0,
@@ -117,7 +124,9 @@ export const processData = (tasksArr, projectsArr) => {
       overlap,
     );
     let taskTimeInRange = 0;
-    const pName = getProjectName(task.projectId);
+    const pInfo = getProjectInfo(task.projectId);
+    const pName = pInfo.title;
+    const pColor = pInfo.color;
 
     if (!dueStart && !task.isDone) {
       metrics.unplannedCount++;
@@ -155,6 +164,7 @@ export const processData = (tasksArr, projectsArr) => {
         metrics.tableEntries.push({
           date: dateStr,
           projectName: pName,
+          projectColor: pColor,
           taskTitle: task.title || "Untitled Task",
           timeSpent: spentOnDate,
           isDone: task.isDone,
@@ -172,6 +182,7 @@ export const processData = (tasksArr, projectsArr) => {
             dateStr,
             projectId: task.projectId || null,
             projectName: pName,
+            projectColor: pColor,
             totalMs: spentOnDate,
           });
         }
@@ -205,6 +216,7 @@ export const processData = (tasksArr, projectsArr) => {
         metrics.tableEntries.push({
           date: doneDate,
           projectName: pName,
+          projectColor: pColor,
           taskTitle: task.title || "Untitled Task",
           timeSpent: 0,
           isDone: task.isDone,
@@ -220,6 +232,7 @@ export const processData = (tasksArr, projectsArr) => {
       metrics.tableEntries.push({
         date: dateStr,
         projectName: pName,
+        projectColor: pColor,
         taskTitle: `${task.title || "Untitled Task"} (${badge})`,
         timeSpent: 0,
         isDone: task.isDone,

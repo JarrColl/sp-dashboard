@@ -15,8 +15,8 @@ export const loadMockData = () => {
   const dates = [daysAgo(0), daysAgo(1), daysAgo(2), daysAgo(3)];
 
   const mockProjects = [
-    { id: "p1", title: "Website Redesign" },
-    { id: "p2", title: "Marketing Campaign" },
+    { id: "p1", title: "Website Redesign", theme: { primary: "#60a5fa" } },
+    { id: "p2", title: "Marketing Campaign", theme: { primary: "#f472b6" } },
   ];
 
   const mockTasks = [

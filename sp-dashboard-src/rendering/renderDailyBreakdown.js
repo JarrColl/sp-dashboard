@@ -5,6 +5,7 @@ import {
   applyRounding,
 } from "../utils/time.js";
 import { formatDateWithWeekday } from "../utils/date.js";
+import { projectCell } from "./renderTable.js";
 
 export const renderDailyBreakdown = (entries) => {
   const tbody = document.getElementById("daily-breakdown-body");
@@ -33,7 +34,7 @@ export const renderDailyBreakdown = (entries) => {
     return `
           <tr>
             <td style="white-space: nowrap;">${formatDateWithWeekday(e.dateStr)}</td>
-            <td style="color: var(--text-color-muted, #9e9e9e); font-size: 0.875rem;">${e.projectName}</td>
+            <td class="project-cell" style="color: var(--text-color-muted, #9e9e9e); font-size: 0.875rem;">${projectCell(e)}</td>
             <td class="time-cell" title="${title}">${text}</td>
           </tr>
         `;

@@ -36,3 +36,16 @@
   font-family: monospace;
   font-size: 0.9rem;
 }
+
+.project-cell {
+  white-space: nowrap;
+}
+.project-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
