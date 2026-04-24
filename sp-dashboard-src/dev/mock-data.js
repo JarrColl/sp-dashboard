@@ -1,4 +1,5 @@
 import { log } from "../utils/log.js";
+import { MS_PER_DAY } from "../constants.js";
 import { toDateString } from "../utils/date.js";
 import { setCachedTasks, setCachedProjects } from "../state.js";
 import { processData } from "../processing/processData.js";
@@ -6,12 +7,12 @@ import { processData } from "../processing/processData.js";
 export const loadMockData = () => {
   log("No PluginAPI detected. Loading mock data...");
 
-  const dates = [
-    toDateString("2026-02-22"),
-    toDateString("2026-02-21"),
-    toDateString("2026-02-20"),
-    toDateString("2026-02-19"),
-  ];
+  const now = Date.now();
+  const daysAgo = (n) => toDateString(now - n * MS_PER_DAY);
+  const timeAt = (n, hour) =>
+    new Date(daysAgo(n) + `T${String(hour).padStart(2, "0")}:00:00Z`).getTime();
+
+  const dates = [daysAgo(0), daysAgo(1), daysAgo(2), daysAgo(3)];
 
   const mockProjects = [
     { id: "p1", title: "Website Redesign" },
@@ -24,7 +25,7 @@ export const loadMockData = () => {
       parentId: null,
       title: "Create Figma Mockups",
       isDone: true,
-      doneOn: new Date("2026-02-22T10:00Z").getTime(),
+      doneOn: timeAt(0, 10),
       projectId: "p1",
       timeSpentOnDay: { [dates[0]]: 14400000, [dates[1]]: 7200000 },
     },
@@ -41,7 +42,7 @@ export const loadMockData = () => {
       parentId: null,
       title: "Draft Email Copy",
       isDone: true,
-      doneOn: new Date("2026-02-20T10:00Z").getTime(),
+      doneOn: timeAt(2, 10),
       projectId: "p2",
       timeSpentOnDay: { [dates[2]]: 18000000 },
     },
@@ -52,7 +53,7 @@ export const loadMockData = () => {
       isDone: false,
       projectId: "p1",
       timeSpentOnDay: { [dates[3]]: 10800000 },
-      dueDay: "2026-02-18",
+      dueDay: daysAgo(5),
     },
     {
       id: "t5",
@@ -61,7 +62,7 @@ export const loadMockData = () => {
       isDone: false,
       projectId: "p1",
       timeSpentOnDay: {},
-      dueDay: "2026-02-28",
+      dueDay: daysAgo(-5),
     },
     {
       id: "t6",
@@ -71,14 +72,14 @@ export const loadMockData = () => {
       projectId: "p1",
       subTaskIds: ["t6-1"],
       timeSpentOnDay: { [dates[0]]: 5400000, [dates[1]]: 7200000 },
-      dueDay: "2026-02-17",
+      dueDay: daysAgo(6),
     },
     {
       id: "t6-1",
       parentId: "t6",
       title: "Fix authentication endpoint",
       isDone: true,
-      doneOn: new Date("2026-02-21T14:00Z").getTime(),
+      doneOn: timeAt(1, 14),
       projectId: "p1",
       timeSpentOnDay: { [dates[1]]: 7200000 },
     },
@@ -87,10 +88,10 @@ export const loadMockData = () => {
       parentId: null,
       title: "Review Code",
       isDone: true,
-      doneOn: new Date("2026-02-21T15:00Z").getTime(),
+      doneOn: timeAt(1, 15),
       projectId: "p1",
       timeSpentOnDay: { [dates[1]]: 3600000 },
-      dueDay: "2026-02-19",
+      dueDay: daysAgo(3),
     },
   ];
 
