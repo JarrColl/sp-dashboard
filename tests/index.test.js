@@ -593,6 +593,59 @@ describe('Date Range Reporter UI', () => {
         expect(cell().getAttribute('title')).toBe('2.50 h');
       });
 
+      it('default format mode is formatted', () => {
+        const select = document.getElementById('daily-breakdown-format');
+        expect(select.value).toBe('formatted');
+      });
+
+      it('format toggle swaps cell text and title between formatted and decimal', () => {
+        setCustomRange('2026-02-20', '2026-02-20');
+        const tasks = [
+          { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
+            timeSpentOnDay:{ '2026-02-20': 9000000 } }, // 2h 30m
+        ];
+        const projects = [{ id:'p1', title:'Alpha' }];
+        window.processData(tasks, projects);
+
+        const cell = () => document.querySelector('#daily-breakdown-body .time-cell');
+        // Default formatted: cell text = "2h 30m", title = "2.50 h"
+        expect(cell().textContent.trim()).toBe('2h 30m');
+        expect(cell().getAttribute('title')).toBe('2.50 h');
+
+        const formatSelect = document.getElementById('daily-breakdown-format');
+        formatSelect.value = 'decimal';
+        formatSelect.dispatchEvent(new Event('change'));
+        // Now the two swap
+        expect(cell().textContent.trim()).toBe('2.50 h');
+        expect(cell().getAttribute('title')).toBe('2h 30m');
+
+        // And flip back
+        formatSelect.value = 'formatted';
+        formatSelect.dispatchEvent(new Event('change'));
+        expect(cell().textContent.trim()).toBe('2h 30m');
+        expect(cell().getAttribute('title')).toBe('2.50 h');
+      });
+
+      it('decimal format combined with rounding renders rounded decimal', () => {
+        setCustomRange('2026-02-20', '2026-02-20');
+        const tasks = [
+          { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
+            timeSpentOnDay:{ '2026-02-20': 135 * 60000 } }, // 2h 15m
+        ];
+        const projects = [{ id:'p1', title:'Alpha' }];
+        window.processData(tasks, projects);
+
+        document.getElementById('daily-breakdown-rounding').value = '30min';
+        document.getElementById('daily-breakdown-rounding').dispatchEvent(new Event('change'));
+        document.getElementById('daily-breakdown-format').value = 'decimal';
+        document.getElementById('daily-breakdown-format').dispatchEvent(new Event('change'));
+
+        // 135 min rounded to 30 = 150 min = 2.50 h
+        const cell = document.querySelector('#daily-breakdown-body .time-cell');
+        expect(cell.textContent.trim()).toBe('2.50 h');
+        expect(cell.getAttribute('title')).toBe('2h 30m');
+      });
+
       it('subtotal uses round-of-raw-sum, not sum-of-rounded-cells', () => {
         setCustomRange('2026-02-20', '2026-02-20');
         const tasks = [
