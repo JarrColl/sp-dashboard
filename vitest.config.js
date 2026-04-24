@@ -11,6 +11,7 @@ export default defineConfig({
         'node_modules/**',
         'tests/**',
         '*.config.js',
+        'sp-dashboard-src/**',
       ],
     },
   },
