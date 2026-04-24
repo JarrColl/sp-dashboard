@@ -550,5 +550,87 @@ describe('Date Range Reporter UI', () => {
       const select = document.getElementById('daily-breakdown-sort');
       expect(select.value).toBe('date-project');
     });
+
+    describe('Rounding', () => {
+      it('default rounding mode is none', () => {
+        const select = document.getElementById('daily-breakdown-rounding');
+        expect(select.value).toBe('none');
+      });
+
+      it('applyRounding passes through when mode is none', () => {
+        expect(window.applyRounding(0, 'none')).toBe(0);
+        expect(window.applyRounding(123456, 'none')).toBe(123456);
+      });
+
+      it('applyRounding rounds to 6 / 15 / 30 minute increments', () => {
+        const min = (n) => n * 60 * 1000;
+        expect(window.applyRounding(min(4), '6min')).toBe(min(6));   // 4 → 6
+        expect(window.applyRounding(min(2), '6min')).toBe(min(0));   // 2 → 0
+        expect(window.applyRounding(min(22), '15min')).toBe(min(15)); // 22 → 15
+        expect(window.applyRounding(min(23), '15min')).toBe(min(30)); // 23 → 30
+        expect(window.applyRounding(min(14), '30min')).toBe(min(0));  // 14 → 0
+        expect(window.applyRounding(min(16), '30min')).toBe(min(30)); // 16 → 30
+      });
+
+      it('changing rounding select re-renders cells with rounded values', () => {
+        setCustomRange('2026-02-20', '2026-02-20');
+        const tasks = [
+          { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
+            timeSpentOnDay:{ '2026-02-20': 135 * 60000 } }, // 2h 15m
+        ];
+        const projects = [{ id:'p1', title:'Alpha' }];
+        window.processData(tasks, projects);
+
+        // Initially 'none': cell reads raw 2h 15m
+        const cell = () => document.querySelector('#daily-breakdown-body .time-cell');
+        expect(cell().textContent.trim()).toBe('2h 15m');
+
+        const roundingSelect = document.getElementById('daily-breakdown-rounding');
+        roundingSelect.value = '30min';
+        roundingSelect.dispatchEvent(new Event('change'));
+        // 135 min rounded to 30 = 150 min = 2h 30m (Math.round(4.5) = 5)
+        expect(cell().textContent.trim()).toBe('2h 30m');
+        expect(cell().getAttribute('title')).toBe('2.50 h');
+      });
+
+      it('subtotal uses round-of-raw-sum, not sum-of-rounded-cells', () => {
+        setCustomRange('2026-02-20', '2026-02-20');
+        const tasks = [
+          // Two tasks on the same day under the same project, each 4 minutes.
+          // Rounded individually to 6 min: each cell becomes 6 min.
+          // But these aggregate to a single cell (since same project/day), so
+          // we need two separate project entries to verify the sum-of-sums logic.
+          // Instead: use one task of 4 minutes on Feb 20 under Alpha, one task of
+          // 4 minutes on Feb 21 under Alpha — then 'Project → Date' sort gives a
+          // Project-total subtotal computed from two 4-min cells.
+        ];
+        // Rebuild with two dates so we have two rows under one project:
+        setCustomRange('2026-02-20', '2026-02-21');
+        const twoDayTasks = [
+          { id:'a', parentId:null, title:'A', isDone:false, projectId:'p1',
+            timeSpentOnDay:{ '2026-02-20': 4 * 60000, '2026-02-21': 4 * 60000 } },
+        ];
+        const projects = [{ id:'p1', title:'Alpha' }];
+        window.processData(twoDayTasks, projects);
+
+        const roundingSelect = document.getElementById('daily-breakdown-rounding');
+        roundingSelect.value = '6min';
+        roundingSelect.dispatchEvent(new Event('change'));
+        const sortSelect = document.getElementById('daily-breakdown-sort');
+        sortSelect.value = 'project-date';
+        sortSelect.dispatchEvent(new Event('change'));
+
+        const rows = Array.from(document.querySelectorAll('#daily-breakdown-body tr'));
+        // Two data rows (each 4 min rounds to 6 min = "0h 6m") + 1 project subtotal.
+        // Raw sum is 8 min; round(8/6)*6 = 6 min = "0h 6m" — NOT 12 min (sum of rounded cells).
+        expect(rows.length).toBe(3);
+        expect(rows[0].textContent).toContain('0h 6m');
+        expect(rows[1].textContent).toContain('0h 6m');
+        expect(rows[2].classList.contains('subtotal-row')).toBe(true);
+        expect(rows[2].textContent).toContain('Project total');
+        expect(rows[2].textContent).toContain('0h 6m');
+        expect(rows[2].textContent).not.toContain('0h 12m');
+      });
+    });
   });
 });

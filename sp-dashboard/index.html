@@ -409,6 +409,13 @@
             <option value="date-project" selected>Date &rarr; Project</option>
             <option value="project-date">Project &rarr; Date</option>
           </select>
+          <label for="daily-breakdown-rounding" style="margin-left: var(--s2, 1rem);">Round:</label>
+          <select id="daily-breakdown-rounding" class="chart-select">
+            <option value="none" selected>None</option>
+            <option value="6min">6 min (0.1h)</option>
+            <option value="15min">15 min (0.25h)</option>
+            <option value="30min">30 min (0.5h)</option>
+          </select>
         </div>
         <table class="details-table daily-breakdown-table">
           <thead>
@@ -576,6 +583,9 @@
     document.getElementById('bar-chart-select').addEventListener('change', () => updateBarChart());
     document.getElementById('pie-chart-select').addEventListener('change', () => updatePieChart());
     document.getElementById('daily-breakdown-sort').addEventListener('change', () => {
+      if (latestMetrics) renderDailyBreakdown(latestMetrics.dailyBreakdownEntries);
+    });
+    document.getElementById('daily-breakdown-rounding').addEventListener('change', () => {
       if (latestMetrics) renderDailyBreakdown(latestMetrics.dailyBreakdownEntries);
     });
 
@@ -755,6 +765,14 @@
       return (milliseconds / 3600000).toFixed(2) + ' h';
     };
 
+    const ROUNDING_MINUTES = { none: 0, '6min': 6, '15min': 15, '30min': 30 };
+    const applyRounding = (milliseconds, mode) => {
+      const minutes = ROUNDING_MINUTES[mode] || 0;
+      if (minutes === 0) return milliseconds;
+      const incrementMs = minutes * 60 * 1000;
+      return Math.round(milliseconds / incrementMs) * incrementMs;
+    };
+
     const formatDateWithWeekday = (dateStr) => {
       const d = new Date(dateStr + "T00:00:00");
       return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -763,6 +781,7 @@
     const renderDailyBreakdown = (entries) => {
       const tbody = document.getElementById('daily-breakdown-body');
       const sortMode = document.getElementById('daily-breakdown-sort').value;
+      const roundingMode = document.getElementById('daily-breakdown-rounding').value;
 
       if (!entries || entries.length === 0) {
         tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-color-muted, #9e9e9e); padding: 3rem;">No tracked time found for this date range.</td></tr>`;
@@ -770,20 +789,30 @@
       }
 
       const htmlRows = [];
-      const dataRow = (e) => `
-        <tr>
-          <td style="white-space: nowrap;">${formatDateWithWeekday(e.dateStr)}</td>
-          <td style="color: var(--text-color-muted, #9e9e9e); font-size: 0.875rem;">${e.projectName}</td>
-          <td class="time-cell" title="${formatDecimalHours(e.totalMs)}">${formatTime(e.totalMs)}</td>
-        </tr>
-      `;
-      const subtotalRow = (labelHtml, totalMs) => `
-        <tr class="subtotal-row">
-          <td></td>
-          <td>${labelHtml}</td>
-          <td class="time-cell" title="${formatDecimalHours(totalMs)}">${formatTime(totalMs)}</td>
-        </tr>
-      `;
+      const dataRow = (e) => {
+        const ms = applyRounding(e.totalMs, roundingMode);
+        return `
+          <tr>
+            <td style="white-space: nowrap;">${formatDateWithWeekday(e.dateStr)}</td>
+            <td style="color: var(--text-color-muted, #9e9e9e); font-size: 0.875rem;">${e.projectName}</td>
+            <td class="time-cell" title="${formatDecimalHours(ms)}">${formatTime(ms)}</td>
+          </tr>
+        `;
+      };
+      // Subtotals round the raw sum (not the sum of rounded cells) to avoid
+      // compounding rounding error. Visible cells may therefore not add up
+      // exactly to the visible subtotal when rounding is active — this is
+      // intentional and gives the accurate period total.
+      const subtotalRow = (labelHtml, rawTotalMs) => {
+        const ms = applyRounding(rawTotalMs, roundingMode);
+        return `
+          <tr class="subtotal-row">
+            <td></td>
+            <td>${labelHtml}</td>
+            <td class="time-cell" title="${formatDecimalHours(ms)}">${formatTime(ms)}</td>
+          </tr>
+        `;
+      };
 
       if (sortMode === 'project-date') {
         const projectGroups = new Map();
@@ -1134,6 +1163,7 @@
     window.formatDateShort = formatDateShort;
     window.formatDecimalHours = formatDecimalHours;
     window.formatDateWithWeekday = formatDateWithWeekday;
+    window.applyRounding = applyRounding;
     window.getDatesInRange = getDatesInRange;
     window.switchTab = switchTab;
     window.processData = processData;
