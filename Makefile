@@ -13,17 +13,15 @@ RELEASE_FILE = $(PROJECT)-v$(VERSION).zip
 # Default target
 build: clean
 	@echo "Building plugin zip file..."
-	@echo "Preparing build directory..."
-	@mkdir -p build/$(PLUGIN_DIR)
-	@cp -R $(PLUGIN_DIR)/* build/$(PLUGIN_DIR)/
+	@echo "Running vite build (outputs to build/$(PLUGIN_DIR)/index.html)..."
+	@npm run build
 	@echo "Generating manifest.json from template..."
 	@VERSION="$(VERSION)" DESCRIPTION="$(DESCRIPTION)" sh -c '\
 		sed -e "s/{{VERSION}}/$$VERSION/g" -e "s|{{DESCRIPTION}}|$$DESCRIPTION|g" \
 		$(PLUGIN_DIR)/manifest.json.template > build/$(PLUGIN_DIR)/manifest.json'
-	@rm -f build/$(PLUGIN_DIR)/manifest.json.template
-	@echo "Minifying HTML (inline CSS/JS preserved) -> build/$(PLUGIN_DIR)/index.html"
-	@npm run build:min
-	@cd build/$(PLUGIN_DIR) && zip -r ../../$(ZIP_FILE) . -x "manifest.json.template"
+	@cp $(PLUGIN_DIR)/plugin.js build/$(PLUGIN_DIR)/plugin.js
+	@cp $(PLUGIN_DIR)/icon.svg build/$(PLUGIN_DIR)/icon.svg
+	@cd build/$(PLUGIN_DIR) && zip -r ../../$(ZIP_FILE) .
 	@echo "✓ Plugin packaged successfully: $(ZIP_FILE)"
 
 screenshot:

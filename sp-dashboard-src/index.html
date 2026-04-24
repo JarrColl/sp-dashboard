@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="title-area">
+        <h1 class="title">Dashboard</h1>
+        <p class="subtitle">Select a time period to view metrics</p>
+      </div>
+
+      <div class="controls">
+        <!-- Custom Date Pickers (Hidden by default) -->
+        <div id="custom-date-container" class="control-box hidden" style="flex-direction: row; gap: var(--s2, 1rem);">
+          <div style="display: flex; flex-direction: column;">
+            <label for="date-from">From</label>
+            <input type="date" id="date-from">
+          </div>
+          <div style="display: flex; flex-direction: column;">
+            <label for="date-to">To</label>
+            <input type="date" id="date-to">
+          </div>
+        </div>
+
+        <!-- Preset Dropdown -->
+        <div class="control-box">
+          <label for="date-preset">Period</label>
+          <select id="date-preset">
+            <option value="today" selected>Today</option>
+            <option value="week">Past Week</option>
+            <option value="month">Past Month</option>
+            <option value="year">Past Year</option>
+            <option value="custom">Custom Range...</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Card Container -->
+    <div class="main-card">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button id="tab-btn-dashboard" class="tab-btn active">Dashboard</button>
+        <button id="tab-btn-daily-breakdown" class="tab-btn">Daily Breakdown</button>
+        <button id="tab-btn-details" class="tab-btn">Detailed List</button>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 1: DASHBOARD                          -->
+      <!-- ========================================== -->
+      <div id="view-dashboard" class="view-content">
+
+        <!-- Top Stats Row -->
+        <div class="grid-3">
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <h3 class="stat-title">Total Time Tracked</h3>
+              <div class="stat-icon" style="background: rgba(96, 165, 250, 0.1); color: #60a5fa;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+            </div>
+            <div class="stat-value-container">
+              <span class="stat-value" id="stat-time">0h 0m</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <h3 class="stat-title">Tasks Completed</h3>
+              <div class="stat-icon" style="background: rgba(74, 222, 128, 0.1); color: #4ade80;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+            </div>
+            <div class="stat-value-container">
+              <span class="stat-value" id="stat-tasks">0</span>
+              <span class="stat-suffix" id="stat-tasks-total">/ 0 total</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="stat-tasks-progress" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <h3 class="stat-title">Overdue Tasks</h3>
+              <div class="stat-icon badge-red"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+            </div>
+            <div class="stat-value-container" style="align-items: center;">
+              <div>
+                <span class="stat-value" id="stat-overdue">0</span>
+                <span class="stat-suffix">tasks</span>
+              </div>
+              <span class="badge badge-red hidden" id="stat-overdue-label">Needs Attention</span>
+              <div id="overdue-note" class="text-red" style="font-size:0.75rem; margin-top:4px; display:none;"></div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <h3 class="stat-title">Completed Late</h3>
+              <div class="stat-icon" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+            </div>
+            <div class="stat-value-container">
+              <span class="stat-value" id="stat-late">0</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid-2">
+
+          <div class="chart-card">
+            <div class="card-header">
+              <h3 class="card-title">Daily Trends</h3>
+              <select id="bar-chart-select" class="chart-select">
+                <option value="time">Time Tracked</option>
+                <option value="completed" selected>Tasks Completed</option>
+                <option value="overdue">Tasks Overdue</option>
+                <option value="late">Completed Late</option>
+              </select>
+            </div>
+            <div class="chart-container">
+              <div class="bar-chart" id="bar-chart-container"></div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="card-header">
+              <h3 class="card-title">Project Breakdown</h3>
+              <select id="pie-chart-select" class="chart-select">
+                <option value="time">Time Tracked</option>
+                <option value="completed" selected>Tasks Completed</option>
+                <option value="overdue">Tasks Overdue</option>
+                <option value="late">Completed Late</option>
+              </select>
+            </div>
+            <div class="chart-container">
+              <div class="pie-wrapper">
+                <div class="pie-chart" id="pie-chart-element"></div>
+                <div class="pie-legend" id="pie-legend-container"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 2: DAILY BREAKDOWN                    -->
+      <!-- ========================================== -->
+      <div id="view-daily-breakdown" class="view-content no-padding hidden">
+        <div class="daily-breakdown-toolbar">
+          <label for="daily-breakdown-sort">Sort:</label>
+          <select id="daily-breakdown-sort" class="chart-select">
+            <option value="date-project" selected>Date &rarr; Project</option>
+            <option value="project-date">Project &rarr; Date</option>
+          </select>
+          <label for="daily-breakdown-rounding" style="margin-left: var(--s2, 1rem);">Round:</label>
+          <select id="daily-breakdown-rounding" class="chart-select">
+            <option value="none" selected>None</option>
+            <option value="6min">6 min (0.1h)</option>
+            <option value="15min">15 min (0.25h)</option>
+            <option value="30min">30 min (0.5h)</option>
+          </select>
+          <label for="daily-breakdown-format" style="margin-left: var(--s2, 1rem);">Format:</label>
+          <select id="daily-breakdown-format" class="chart-select">
+            <option value="formatted" selected>Formatted</option>
+            <option value="decimal">Decimal</option>
+          </select>
+        </div>
+        <table class="details-table daily-breakdown-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Project</th>
+              <th>Hours</th>
+            </tr>
+          </thead>
+          <tbody id="daily-breakdown-body">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW 3: DETAILED LIST                      -->
+      <!-- ========================================== -->
+      <div id="view-details" class="view-content no-padding hidden">
+        <table class="details-table">
+          <thead>
+            <tr>
+              <th data-sort="date">Date</th>
+              <th data-sort="projectName">Project</th>
+              <th data-sort="taskTitle">Task</th>
+              <th data-sort="timeSpent">Time Spent</th>
+              <th data-sort="status">Status</th>
+            </tr>
+          </thead>
+          <tbody id="details-table-body">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bar chart tooltip positioned at cursor -->
+  <div class="bar-tooltip" id="bar-tooltip"></div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

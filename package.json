@@ -9,7 +9,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build:min": "./scripts/minify.sh sp-dashboard",
     "check:syntax": "node scripts/check-js.js",
     "screenshot": "node scripts/screenshot.js"
   },
