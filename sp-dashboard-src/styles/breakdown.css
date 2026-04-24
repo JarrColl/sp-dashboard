@@ -1,0 +1,16 @@
+.daily-breakdown-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s, 0.5rem);
+  padding: var(--s2, 1rem) var(--s3, 1.5rem);
+  border-bottom: 1px solid var(--divider-color, #333);
+  background: var(--card-bg, #1e1e1e);
+  font-size: 0.875rem;
+  color: var(--text-color-muted, #9e9e9e);
+}
+.daily-breakdown-table .subtotal-row td {
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-color, #fff);
+}
+.daily-breakdown-table .subtotal-row:hover { background: rgba(255, 255, 255, 0.04); }

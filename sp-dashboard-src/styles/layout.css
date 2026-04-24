@@ -1,0 +1,79 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: var(--s3, 1.5rem);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s, 0.5rem);
+}
+@media (min-width: 768px) {
+  .header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 var(--s-quarter, 0.25rem) 0;
+}
+
+.subtitle {
+  color: var(--text-color-muted, #9e9e9e);
+  margin: 0;
+  font-size: 1rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--s, 0.5rem);
+}
+
+.control-box {
+  background: var(--card-bg, #1e1e1e);
+  border: 1px solid var(--divider-color, #333);
+  border-radius: var(--card-border-radius, 8px);
+  padding: var(--s, 0.5rem) var(--s2, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-box label {
+  font-size: 0.75rem;
+  color: var(--text-color-muted, #9e9e9e);
+}
+
+select, input[type="date"] {
+  background: transparent;
+  color: var(--text-color, #fff);
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+}
+select option {
+  background: var(--card-bg, #1e1e1e);
+  color: var(--text-color, #fff);
+}
+
+.main-card {
+  background: var(--card-bg, #1e1e1e);
+  border: 1px solid var(--divider-color, #333);
+  border-radius: var(--card-border-radius, 8px);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  box-shadow: var(--whiteframe-shadow-2dp, 0 2px 4px rgba(0,0,0,0.1));
+}
