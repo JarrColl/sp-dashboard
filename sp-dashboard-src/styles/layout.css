@@ -63,6 +63,12 @@ input[type="date"] {
   cursor: pointer;
   padding: 0;
 }
+.control-box select,
+.control-box input[type="date"] {
+  padding: 2px 0.75rem;
+  margin: 0 -0.5rem;
+  min-width: 7rem;
+}
 select option {
   background: var(--card-bg, #1e1e1e);
   color: var(--text-color, #fff);
